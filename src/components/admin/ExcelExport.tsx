@@ -21,6 +21,7 @@ interface Response {
   question_id: string
   selected_option_ids: string[] | null
   text_response: string | null
+  text_responses: Record<string, string> | null  // 인라인 입력용: { "1": "답변1", "2": "답변2" }
 }
 
 // 조건부 질문을 부모 질문 다음에 배치하는 함수
@@ -74,7 +75,10 @@ export function ExcelExport({ surveyId, surveyTitle }: ExcelExportProps) {
           .order('completed_at'),
       ])
 
-      const rawQuestions: Question[] = questionsRes.data ?? []
+      // __PAGE_BREAK__ content도 필터링 (레거시 데이터 처리)
+      const rawQuestions: Question[] = (questionsRes.data ?? []).filter(
+        (q) => q.content !== '__PAGE_BREAK__'
+      )
       const sessions: ResponseSession[] = sessionsRes.data ?? []
 
       // 조건부 질문을 부모 질문 다음에 배치
@@ -95,6 +99,15 @@ export function ExcelExport({ surveyId, surveyTitle }: ExcelExportProps) {
         .select('*')
         .in('session_id', sessionIds)
       const responses: Response[] = filteredResponsesRes.data ?? []
+
+      // 디버깅: 조건부 질문과 응답 확인
+      const conditionalQuestions = questions.filter(q => q.parent_question_id)
+      console.log('[ExcelExport] 조건부 질문들:', conditionalQuestions.map(q => ({ id: q.id, content: q.content, type: q.type })))
+      console.log('[ExcelExport] 전체 응답 수:', responses.length)
+      conditionalQuestions.forEach(cq => {
+        const cqResponses = responses.filter(r => r.question_id === cq.id)
+        console.log(`[ExcelExport] 조건부 질문 "${cq.content}" 응답:`, cqResponses)
+      })
 
       // Get respondent info keys
       const respondentInfoKeys = new Set<string>()
@@ -140,7 +153,18 @@ export function ExcelExport({ surveyId, surveyTitle }: ExcelExportProps) {
           )
 
           if (question.type === 'text') {
-            row.push(questionResponse?.text_response ?? '')
+            // text_responses (인라인 다중 입력)가 있으면 병합하여 표시
+            const textResponses = questionResponse?.text_responses
+            if (textResponses && Object.keys(textResponses).length > 0) {
+              // 키 순서대로 정렬하여 "입력1 / 입력2 / 입력3" 형식으로 표시
+              const sortedValues = Object.keys(textResponses)
+                .sort((a, b) => parseInt(a) - parseInt(b))
+                .map((key) => textResponses[key])
+                .filter(Boolean)
+              row.push(sortedValues.join(' / '))
+            } else {
+              row.push(questionResponse?.text_response ?? '')
+            }
           } else {
             // selected_option_ids 배열에서 옵션 내용 가져오기
             const selectedOptionIds = questionResponse?.selected_option_ids ?? []
