@@ -38,6 +38,7 @@ export function ConditionEditor({
   const [questionOptions, setQuestionOptions] = useState<Option[]>([])
   const [isUploading, setIsUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
     if (conditionalQuestion) {
@@ -131,6 +132,80 @@ export function ConditionEditor({
   }, [])
 
   const isChoiceType = questionType === 'single' || questionType === 'multiple'
+
+  // 다음 인라인 입력 번호 계산
+  const getNextInputNumber = useCallback(() => {
+    const regex = /\{\{input:(\d+)/g
+    let maxNum = 0
+    let match
+    while ((match = regex.exec(questionText)) !== null) {
+      const num = parseInt(match[1], 10)
+      if (num > maxNum) maxNum = num
+    }
+    return maxNum + 1
+  }, [questionText])
+
+  // 인라인 입력 삽입
+  const insertInlineInput = useCallback((position?: number) => {
+    const textarea = textareaRef.current
+    if (!textarea) return
+
+    const nextNum = getNextInputNumber()
+    const insertText = `{{input:${nextNum}[입력]}}`
+
+    const cursorPos = position ?? textarea.selectionStart ?? questionText.length
+    const newText = questionText.slice(0, cursorPos) + insertText + questionText.slice(cursorPos)
+    setQuestionText(newText)
+
+    // 커서를 삽입된 텍스트 뒤로 이동
+    setTimeout(() => {
+      textarea.focus()
+      const newCursorPos = cursorPos + insertText.length
+      textarea.setSelectionRange(newCursorPos, newCursorPos)
+    }, 0)
+  }, [questionText, getNextInputNumber])
+
+  // 인라인 입력 버튼 드래그 시작
+  const handleInlineInputDragStart = useCallback((e: React.DragEvent) => {
+    e.dataTransfer.setData('text/plain', 'inline-input')
+    e.dataTransfer.effectAllowed = 'copy'
+  }, [])
+
+  // textarea에 드롭
+  const handleTextareaDrop = useCallback((e: React.DragEvent) => {
+    const data = e.dataTransfer.getData('text/plain')
+    if (data === 'inline-input') {
+      e.preventDefault()
+      e.stopPropagation()
+
+      const textarea = textareaRef.current
+      if (!textarea) return
+
+      // 드롭 위치 계산
+      let position = questionText.length
+      if (document.caretPositionFromPoint) {
+        const caretPos = document.caretPositionFromPoint(e.clientX, e.clientY)
+        if (caretPos) {
+          position = caretPos.offset
+        }
+      } else if ((document as unknown as { caretRangeFromPoint: (x: number, y: number) => Range | null }).caretRangeFromPoint) {
+        const range = (document as unknown as { caretRangeFromPoint: (x: number, y: number) => Range | null }).caretRangeFromPoint(e.clientX, e.clientY)
+        if (range) {
+          position = range.startOffset
+        }
+      }
+
+      insertInlineInput(position)
+    }
+  }, [questionText, insertInlineInput])
+
+  const handleTextareaDragOver = useCallback((e: React.DragEvent) => {
+    const data = e.dataTransfer.types.includes('text/plain')
+    if (data) {
+      e.preventDefault()
+      e.dataTransfer.dropEffect = 'copy'
+    }
+  }, [])
 
   // 옵션 추가
   const handleAddOption = () => {
@@ -270,14 +345,37 @@ export function ConditionEditor({
             조건부 질문 내용 <span className="text-error">*</span>
           </label>
           <textarea
+            ref={textareaRef}
             id="conditionQuestionText"
             value={questionText}
             onChange={(e) => setQuestionText(e.target.value)}
+            onDrop={handleTextareaDrop}
+            onDragOver={handleTextareaDragOver}
             rows={3}
             className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:border-gray-900 transition-colors resize-none"
             placeholder="조건부 질문 내용을 입력하세요"
             required
           />
+
+          {/* 서술형일 때 인라인 입력 버튼 */}
+          {questionType === 'text' && (
+            <div className="mt-2 flex items-center gap-2">
+              <div
+                draggable
+                onDragStart={handleInlineInputDragStart}
+                onClick={() => insertInlineInput()}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 text-sm font-medium rounded-lg border border-blue-200 cursor-grab active:cursor-grabbing hover:bg-blue-100 transition-colors select-none"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                인라인 입력
+              </div>
+              <span className="text-xs text-gray-400">
+                드래그하여 원하는 위치에 놓거나 클릭하여 추가
+              </span>
+            </div>
+          )}
         </div>
 
         {/* 선택형일 때 보기 편집 */}
