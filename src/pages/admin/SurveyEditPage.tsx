@@ -303,7 +303,18 @@ export default function SurveyEditPage() {
           const isPageBreak = question.content === '__PAGE_BREAK__'
 
           if (question.id.startsWith('temp_')) {
-            // 새 문항 생성
+            // 새 문항 생성 (옵션 포함)
+            const questionOptions = question.options?.map((opt, idx) => ({
+              content: opt.content,
+              order_index: opt.order_index ?? idx,
+              allows_text_input: opt.allows_text_input ?? false,
+            }))
+
+            console.log('[SurveyEditPage.handleSave] creating question', {
+              question: question.content,
+              optionsCount: questionOptions?.length ?? 0,
+            })
+
             await createQuestionMutation.mutateAsync({
               data: {
                 survey_id: savedSurveyId,
@@ -315,6 +326,7 @@ export default function SurveyEditPage() {
                 parent_question_id: question.parent_question_id,
                 trigger_option_ids: question.trigger_option_ids,
               },
+              options: questionOptions,
             })
           } else if (!isPageBreak) {
             // 기존 문항 업데이트
