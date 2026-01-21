@@ -48,7 +48,23 @@ export default function LoginPage() {
     console.log('[LoginPage] state changed', { isSubmitting: true })
 
     try {
-      await login(email, password)
+      const result = await login(email, password)
+      console.log('[LoginPage] login result', { user: result.user, error: result.error })
+
+      if (result.error) {
+        // 로그인 실패
+        console.error('[LoginPage] login failed', result.error)
+        setError(result.error.message || '로그인에 실패했습니다.')
+        return
+      }
+
+      if (!result.user) {
+        // 사용자 정보 없음
+        setError('로그인에 실패했습니다. 다시 시도해주세요.')
+        return
+      }
+
+      // 로그인 성공
       console.log('[LoginPage] navigating to', '/admin/dashboard')
       navigate('/admin/dashboard', { replace: true })
     } catch (err) {
