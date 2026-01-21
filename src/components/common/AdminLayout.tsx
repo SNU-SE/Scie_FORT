@@ -14,7 +14,6 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { label: '설문관리', path: '/admin/dashboard' },
-  { label: '응답확인', path: '/admin/responses' },
 ]
 
 const AdminLayout: React.FC<AdminLayoutProps> = ({
