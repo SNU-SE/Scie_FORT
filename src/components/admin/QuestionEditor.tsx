@@ -9,7 +9,7 @@ interface QuestionEditorProps {
   options?: Option[]
   onSave: (question: Question, options: Option[]) => void
   onCancel: () => void
-  onAddCondition?: (optionId: string) => void
+  onAddCondition?: (optionId: string, currentOptions: Option[]) => void
 }
 
 export function QuestionEditor({
@@ -62,9 +62,9 @@ export function QuestionEditor({
   }
 
   const handleAddConditionInternal = (optionId: string) => {
-    console.log('[QuestionEditor] handleAddCondition called', { optionId })
+    console.log('[QuestionEditor] handleAddCondition called', { optionId, currentOptions })
     if (onAddCondition) {
-      onAddCondition(optionId)
+      onAddCondition(optionId, currentOptions)
     }
   }
 

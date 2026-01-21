@@ -186,12 +186,12 @@ export default function SurveyEditPage() {
   }, [updateQuestion, closeQuestionEditor])
 
   // 조건 추가 핸들러 (문항 편집 중 선택지에서 호출)
-  const handleAddCondition = useCallback((optionId: string) => {
-    console.log('[SurveyEditPage.handleAddCondition] called', { optionId })
+  const handleAddCondition = useCallback((optionId: string, currentOptions: import('@/types').Option[]) => {
+    console.log('[SurveyEditPage.handleAddCondition] called', { optionId, currentOptions })
     if (!selectedQuestion) return
 
-    // 현재 문항의 options에서 해당 option 찾기
-    const parentOptions = selectedQuestion.options || []
+    // QuestionEditor에서 전달받은 현재 옵션들 사용
+    const parentOptions = currentOptions || []
 
     // 조건 편집기 열기
     openConditionEditor(selectedQuestion, parentOptions)
