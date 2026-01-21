@@ -105,11 +105,18 @@ export default function SurveyEditPage() {
 
   // Survey 업데이트 핸들러
   const handleSurveyUpdate = useCallback((updates: Partial<Survey>) => {
-    console.log('[SurveyEditPage.handleSurveyUpdate] called', { updates })
-    if (survey) {
-      setSurvey({ ...survey, ...updates })
-      console.log('[SurveyEditPage] state changed', { survey: { ...survey, ...updates } })
+    console.log('[SurveyEditPage.handleSurveyUpdate] called', { updates, currentSurvey: survey })
+    // survey가 null이면 기본값으로 초기화
+    const baseSurvey = survey || {
+      title: '',
+      description: '',
+      is_active: false,
+      collect_respondent_info: false,
+      respondent_fields: [],
     }
+    const updatedSurvey = { ...baseSurvey, ...updates }
+    setSurvey(updatedSurvey)
+    console.log('[SurveyEditPage] state changed', { survey: updatedSurvey })
   }, [survey, setSurvey])
 
   // 인적정보 필드 업데이트
@@ -233,8 +240,19 @@ export default function SurveyEditPage() {
 
   // 설문 저장
   const handleSave = async () => {
-    console.log('[SurveyEditPage.handleSave] called', { survey, questions })
-    if (!survey || !user) return
+    console.log('[SurveyEditPage.handleSave] called', { survey, questions, user })
+
+    if (!survey) {
+      setSaveError('설문 정보가 없습니다. 페이지를 새로고침해주세요.')
+      console.error('[SurveyEditPage.handleSave] survey is null')
+      return
+    }
+
+    if (!user) {
+      setSaveError('로그인이 필요합니다. 다시 로그인해주세요.')
+      console.error('[SurveyEditPage.handleSave] user is null - authentication required')
+      return
+    }
 
     if (!survey.title?.trim()) {
       setSaveError('설문 제목을 입력해주세요.')
