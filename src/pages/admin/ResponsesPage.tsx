@@ -252,7 +252,7 @@ export default function ResponsesPage() {
         {selectedResponse && (
           <ResponseDetail
             session={selectedResponse}
-            responses={[]}
+            responses={selectedResponse.responses || []}
             questions={survey.questions || []}
             options={(survey.questions || []).flatMap(q => q.options || [])}
             onClose={handleCloseDetail}
