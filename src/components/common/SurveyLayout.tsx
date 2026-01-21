@@ -63,9 +63,9 @@ const SurveyLayout: React.FC<SurveyLayoutProps> = ({
       {/* Main Content */}
       <main className="flex-1 flex">
         <div className="max-w-7xl mx-auto w-full flex flex-col lg:flex-row">
-          {/* Left: Image Section */}
-          <div className="lg:w-1/2 bg-gray-100 flex items-center justify-center p-6 lg:p-12">
-            {imageUrl ? (
+          {/* Left: Image Section (only shown when imageUrl exists) */}
+          {imageUrl && (
+            <div className="lg:w-1/2 bg-gray-100 flex items-center justify-center p-6 lg:p-12">
               <div className="w-full h-full max-h-[60vh] lg:max-h-full flex items-center justify-center">
                 <img
                   src={imageUrl}
@@ -73,15 +73,11 @@ const SurveyLayout: React.FC<SurveyLayoutProps> = ({
                   className="max-w-full max-h-full object-contain rounded-lg shadow-sm"
                 />
               </div>
-            ) : (
-              <div className="w-full h-64 lg:h-full bg-gray-200 rounded-lg flex items-center justify-center">
-                <span className="text-gray-400">이미지 없음</span>
-              </div>
-            )}
-          </div>
+            </div>
+          )}
 
-          {/* Right: Form Section */}
-          <div className="lg:w-1/2 bg-primary-white flex flex-col">
+          {/* Right: Form Section (full width when no image) */}
+          <div className={`${imageUrl ? 'lg:w-1/2' : 'w-full'} bg-primary-white flex flex-col`}>
             <div className="flex-1 p-6 lg:p-12 overflow-y-auto">
               {children}
             </div>
