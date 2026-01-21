@@ -72,37 +72,55 @@ export default function SurveyPage() {
   // Check if we have pages or should use flat question list
   const hasPages = sortedPages.length > 0
 
-  // Get all root questions (without parent) sorted by page_index and order_index
-  // Exclude page break markers
-  const allRootQuestions = useMemo(() => {
+  // Get all root questions (without parent) sorted by order_index
+  // Include page break markers for page splitting
+  const allSortedQuestions = useMemo(() => {
     if (!survey?.questions) return []
     return survey.questions
-      .filter((q) => !q.parent_question_id && q.content !== '__PAGE_BREAK__' && !q.is_page_break)
-      .sort((a, b) => {
-        if (a.page_index !== b.page_index) {
-          return a.page_index - b.page_index
-        }
-        return a.order_index - b.order_index
-      })
+      .filter((q) => !q.parent_question_id)
+      .sort((a, b) => a.order_index - b.order_index)
   }, [survey])
 
-  // Group questions by page_index when no explicit pages exist
+  // Group questions by page breaks
   const virtualPages = useMemo(() => {
     if (hasPages) return []
 
-    const pageMap = new Map<number, typeof allRootQuestions>()
-    allRootQuestions.forEach(q => {
-      const pageIdx = q.page_index || 0
-      if (!pageMap.has(pageIdx)) {
-        pageMap.set(pageIdx, [])
+    const pages: { pageIndex: number; questions: Question[] }[] = []
+    let currentPageQuestions: Question[] = []
+    let pageIndex = 0
+
+    allSortedQuestions.forEach((q) => {
+      // 페이지 나눔 마커를 만나면 현재 페이지를 저장하고 새 페이지 시작
+      if (q.content === '__PAGE_BREAK__' || q.is_page_break) {
+        if (currentPageQuestions.length > 0) {
+          pages.push({ pageIndex, questions: currentPageQuestions })
+          pageIndex++
+          currentPageQuestions = []
+        }
+      } else {
+        currentPageQuestions.push(q)
       }
-      pageMap.get(pageIdx)!.push(q)
     })
 
-    return Array.from(pageMap.entries())
-      .sort((a, b) => a[0] - b[0])
-      .map(([pageIndex, questions]) => ({ pageIndex, questions }))
-  }, [hasPages, allRootQuestions])
+    // 마지막 페이지 추가
+    if (currentPageQuestions.length > 0) {
+      pages.push({ pageIndex, questions: currentPageQuestions })
+    }
+
+    // 페이지가 없으면 빈 페이지 하나 추가
+    if (pages.length === 0) {
+      pages.push({ pageIndex: 0, questions: [] })
+    }
+
+    return pages
+  }, [hasPages, allSortedQuestions])
+
+  // Get all root questions excluding page breaks (for other uses)
+  const allRootQuestions = useMemo(() => {
+    return allSortedQuestions.filter(
+      (q) => q.content !== '__PAGE_BREAK__' && !q.is_page_break
+    )
+  }, [allSortedQuestions])
 
   // Total number of pages (use virtual pages if no explicit pages)
   const totalPages = hasPages ? sortedPages.length : Math.max(virtualPages.length, 1)
