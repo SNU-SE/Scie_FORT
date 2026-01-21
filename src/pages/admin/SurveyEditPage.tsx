@@ -305,7 +305,20 @@ export default function SurveyEditPage() {
 
       // 문항 저장 처리
       if (savedSurveyId) {
-        for (const question of questions) {
+        // temp ID -> real ID 매핑
+        const questionIdMap = new Map<string, string>()
+        const optionIdMap = new Map<string, string>()
+
+        // 1단계: 일반 질문 (parent_question_id가 없는 질문) 먼저 저장
+        const regularQuestions = questions.filter(q => !q.parent_question_id)
+        const conditionalQuestions = questions.filter(q => q.parent_question_id)
+
+        console.log('[SurveyEditPage.handleSave] separating questions', {
+          regular: regularQuestions.length,
+          conditional: conditionalQuestions.length,
+        })
+
+        for (const question of regularQuestions) {
           const isPageBreak = question.content === '__PAGE_BREAK__'
 
           if (question.id.startsWith('temp_')) {
@@ -316,12 +329,13 @@ export default function SurveyEditPage() {
               allows_text_input: opt.allows_text_input ?? false,
             }))
 
-            console.log('[SurveyEditPage.handleSave] creating question', {
+            console.log('[SurveyEditPage.handleSave] creating regular question', {
+              tempId: question.id,
               question: question.content,
               optionsCount: questionOptions?.length ?? 0,
             })
 
-            await createQuestionMutation.mutateAsync({
+            const createdQuestion = await createQuestionMutation.mutateAsync({
               data: {
                 survey_id: savedSurveyId,
                 page_index: question.page_index,
@@ -329,11 +343,32 @@ export default function SurveyEditPage() {
                 type: question.type,
                 content: question.content,
                 is_required: question.is_required,
-                parent_question_id: question.parent_question_id,
-                trigger_option_ids: question.trigger_option_ids,
+                parent_question_id: null,
+                trigger_option_ids: null,
               },
               options: questionOptions,
             })
+
+            // ID 매핑 저장
+            questionIdMap.set(question.id, createdQuestion.id)
+            console.log('[SurveyEditPage.handleSave] question ID mapped', {
+              tempId: question.id,
+              realId: createdQuestion.id,
+            })
+
+            // 옵션 ID 매핑 저장
+            if (question.options && createdQuestion.options) {
+              question.options.forEach((tempOpt, idx) => {
+                const realOpt = createdQuestion.options?.[idx]
+                if (realOpt && tempOpt.id.startsWith('temp_')) {
+                  optionIdMap.set(tempOpt.id, realOpt.id)
+                  console.log('[SurveyEditPage.handleSave] option ID mapped', {
+                    tempId: tempOpt.id,
+                    realId: realOpt.id,
+                  })
+                }
+              })
+            }
           } else if (!isPageBreak) {
             // 기존 문항 업데이트
             await updateQuestionMutation.mutateAsync({
@@ -345,8 +380,75 @@ export default function SurveyEditPage() {
                 type: question.type,
                 content: question.content,
                 is_required: question.is_required,
-                parent_question_id: question.parent_question_id,
-                trigger_option_ids: question.trigger_option_ids,
+                parent_question_id: null,
+                trigger_option_ids: null,
+              },
+            })
+            // 기존 질문은 ID가 그대로 유지됨
+            questionIdMap.set(question.id, question.id)
+            // 기존 옵션도 ID 그대로 유지
+            question.options?.forEach(opt => {
+              if (!opt.id.startsWith('temp_')) {
+                optionIdMap.set(opt.id, opt.id)
+              }
+            })
+          }
+        }
+
+        // 2단계: 조건부 질문 저장 (매핑된 ID 사용)
+        for (const question of conditionalQuestions) {
+          // parent_question_id 매핑
+          const realParentId = question.parent_question_id?.startsWith('temp_')
+            ? questionIdMap.get(question.parent_question_id)
+            : question.parent_question_id
+
+          // trigger_option_ids 매핑
+          const realTriggerOptionIds = question.trigger_option_ids?.map(optId =>
+            optId.startsWith('temp_') ? optionIdMap.get(optId) || optId : optId
+          ).filter(Boolean) as string[] | null
+
+          console.log('[SurveyEditPage.handleSave] processing conditional question', {
+            tempId: question.id,
+            originalParentId: question.parent_question_id,
+            realParentId,
+            originalTriggerOptionIds: question.trigger_option_ids,
+            realTriggerOptionIds,
+          })
+
+          if (question.id.startsWith('temp_')) {
+            // 새 조건부 문항 생성
+            const questionOptions = question.options?.map((opt, idx) => ({
+              content: opt.content,
+              order_index: opt.order_index ?? idx,
+              allows_text_input: opt.allows_text_input ?? false,
+            }))
+
+            await createQuestionMutation.mutateAsync({
+              data: {
+                survey_id: savedSurveyId,
+                page_index: question.page_index,
+                order_index: question.order_index,
+                type: question.type,
+                content: question.content,
+                is_required: question.is_required,
+                parent_question_id: realParentId || null,
+                trigger_option_ids: realTriggerOptionIds,
+              },
+              options: questionOptions,
+            })
+          } else {
+            // 기존 조건부 문항 업데이트
+            await updateQuestionMutation.mutateAsync({
+              id: question.id,
+              surveyId: savedSurveyId,
+              data: {
+                page_index: question.page_index,
+                order_index: question.order_index,
+                type: question.type,
+                content: question.content,
+                is_required: question.is_required,
+                parent_question_id: realParentId || null,
+                trigger_option_ids: realTriggerOptionIds,
               },
             })
           }
