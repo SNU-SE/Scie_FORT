@@ -6,14 +6,15 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button, Modal, AdminLayout, LoadingSpinner } from '@/components/common'
 import { SurveyList } from '@/components/admin'
-import { useSurveys, useDeleteSurvey, useCreateSurvey } from '@/hooks'
+import { useSurveys, useDeleteSurvey, useCreateSurvey, useAuth } from '@/hooks'
 import type { Survey } from '@/types'
 
 export default function DashboardPage() {
   const navigate = useNavigate()
+  const { user } = useAuth()
 
   // 설문 목록 조회
-  const { data: surveys, isLoading, error, refetch } = useSurveys()
+  const { data: surveys, isLoading, error, refetch } = useSurveys(user?.id)
 
   // 설문 삭제 mutation
   const deleteSurveyMutation = useDeleteSurvey()
@@ -52,27 +53,30 @@ export default function DashboardPage() {
   }
 
   // 설문 편집
-  const handleEdit = (survey: Survey) => {
-    console.log('[DashboardPage.handleEdit] called', { surveyId: survey.id })
-    console.log('[DashboardPage] navigating to', `/admin/survey/${survey.id}`)
-    navigate(`/admin/survey/${survey.id}`)
+  const handleEdit = (id: string) => {
+    console.log('[DashboardPage.handleEdit] called', { surveyId: id })
+    console.log('[DashboardPage] navigating to', `/admin/survey/${id}`)
+    navigate(`/admin/survey/${id}`)
   }
 
   // 응답 보기
-  const handleViewResponses = (survey: Survey) => {
-    console.log('[DashboardPage.handleViewResponses] called', { surveyId: survey.id })
-    console.log('[DashboardPage] navigating to', `/admin/survey/${survey.id}/responses`)
-    navigate(`/admin/survey/${survey.id}/responses`)
+  const handleViewResponses = (id: string) => {
+    console.log('[DashboardPage.handleViewResponses] called', { surveyId: id })
+    console.log('[DashboardPage] navigating to', `/admin/survey/${id}/responses`)
+    navigate(`/admin/survey/${id}/responses`)
   }
 
   // 설문 복제
-  const handleDuplicate = async (survey: Survey) => {
-    console.log('[DashboardPage.handleDuplicate] called', { surveyId: survey.id })
+  const handleDuplicate = async (id: string) => {
+    console.log('[DashboardPage.handleDuplicate] called', { surveyId: id })
+    const survey = surveys?.find(s => s.id === id)
+    if (!survey || !user) return
+
     try {
       const duplicatedSurvey = await createSurveyMutation.mutateAsync({
         title: `${survey.title} (복사본)`,
         description: survey.description,
-        user_id: survey.user_id,
+        user_id: user.id,
         is_active: false,
         collect_respondent_info: survey.collect_respondent_info,
         respondent_fields: survey.respondent_fields,
@@ -89,8 +93,9 @@ export default function DashboardPage() {
   }
 
   // 삭제 확인 모달 열기
-  const handleDeleteClick = (survey: Survey) => {
-    console.log('[DashboardPage.handleDeleteClick] called', { surveyId: survey.id })
+  const handleDeleteClick = (id: string) => {
+    console.log('[DashboardPage.handleDeleteClick] called', { surveyId: id })
+    const survey = surveys?.find(s => s.id === id) || null
     setDeleteTarget(survey)
     console.log('[DashboardPage] state changed', { deleteTarget: survey })
   }
@@ -105,12 +110,12 @@ export default function DashboardPage() {
   // 설문 삭제 실행
   const handleDeleteConfirm = async () => {
     console.log('[DashboardPage.handleDeleteConfirm] called', { deleteTargetId: deleteTarget?.id })
-    if (!deleteTarget) return
+    if (!deleteTarget || !user) return
 
     setIsDeleting(true)
     console.log('[DashboardPage] state changed', { isDeleting: true })
     try {
-      await deleteSurveyMutation.mutateAsync(deleteTarget.id)
+      await deleteSurveyMutation.mutateAsync({ id: deleteTarget.id, userId: user.id })
       setDeleteTarget(null)
       console.log('[DashboardPage] state changed', { deleteTarget: null })
       refetch()

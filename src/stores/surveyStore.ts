@@ -59,24 +59,22 @@ const initialState = {
 
 export const useSurveyStore = create<SurveyEditState>()(
   devtools(
-    (set, get) => ({
+    (set) => ({
       ...initialState,
 
       // Survey Actions
       setSurvey: (survey) => {
         console.log('[surveyStore.setSurvey] called', { survey })
-        set((state) => {
-          const newState = { ...state, survey }
-          console.log('[surveyStore.setSurvey] state updated', { survey: newState.survey })
+        set(() => {
+          console.log('[surveyStore.setSurvey] state updated', { survey })
           return { survey }
         }, false, 'setSurvey')
       },
 
       setQuestions: (questions) => {
         console.log('[surveyStore.setQuestions] called', { questions })
-        set((state) => {
-          const newState = { ...state, questions }
-          console.log('[surveyStore.setQuestions] state updated', { questions: newState.questions })
+        set(() => {
+          console.log('[surveyStore.setQuestions] state updated', { questions })
           return { questions }
         }, false, 'setQuestions')
       },
@@ -128,7 +126,7 @@ export const useSurveyStore = create<SurveyEditState>()(
 
       reorderQuestions: (questions) => {
         console.log('[surveyStore.reorderQuestions] called', { questions })
-        set((state) => {
+        set(() => {
           console.log('[surveyStore.reorderQuestions] state updated', { questions })
           return { questions }
         }, false, 'reorderQuestions')
@@ -137,7 +135,7 @@ export const useSurveyStore = create<SurveyEditState>()(
       // UI Actions
       selectQuestion: (id) => {
         console.log('[surveyStore.selectQuestion] called', { id })
-        set((state) => {
+        set(() => {
           console.log('[surveyStore.selectQuestion] state updated', { selectedQuestionId: id })
           return { selectedQuestionId: id }
         }, false, 'selectQuestion')
@@ -145,7 +143,7 @@ export const useSurveyStore = create<SurveyEditState>()(
 
       openQuestionEditor: () => {
         console.log('[surveyStore.openQuestionEditor] called')
-        set((state) => {
+        set(() => {
           console.log('[surveyStore.openQuestionEditor] state updated', { isQuestionEditorOpen: true })
           return { isQuestionEditorOpen: true }
         }, false, 'openQuestionEditor')
@@ -154,7 +152,7 @@ export const useSurveyStore = create<SurveyEditState>()(
       closeQuestionEditor: () => {
         console.log('[surveyStore.closeQuestionEditor] called')
         set(
-          (state) => {
+          () => {
             console.log('[surveyStore.closeQuestionEditor] state updated', { isQuestionEditorOpen: false, selectedQuestionId: null })
             return { isQuestionEditorOpen: false, selectedQuestionId: null }
           },
@@ -166,7 +164,7 @@ export const useSurveyStore = create<SurveyEditState>()(
       openConditionEditor: (parentQuestion, parentOptions) => {
         console.log('[surveyStore.openConditionEditor] called', { parentQuestion, parentOptions })
         set(
-          (state) => {
+          () => {
             console.log('[surveyStore.openConditionEditor] state updated', {
               isConditionEditorOpen: true,
               conditionParentQuestion: parentQuestion,
@@ -186,7 +184,7 @@ export const useSurveyStore = create<SurveyEditState>()(
       closeConditionEditor: () => {
         console.log('[surveyStore.closeConditionEditor] called')
         set(
-          (state) => {
+          () => {
             console.log('[surveyStore.closeConditionEditor] state updated', {
               isConditionEditorOpen: false,
               conditionParentQuestion: null,
@@ -206,7 +204,7 @@ export const useSurveyStore = create<SurveyEditState>()(
       // Reset
       resetStore: () => {
         console.log('[surveyStore.resetStore] called')
-        set((state) => {
+        set(() => {
           console.log('[surveyStore.resetStore] state updated', { ...initialState })
           return initialState
         }, false, 'resetStore')

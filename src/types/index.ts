@@ -6,7 +6,7 @@
 // Base Types
 // --------------------------------------------
 
-export type QuestionType = 'single' | 'multiple' | 'text'
+export type QuestionType = 'single' | 'multiple' | 'text' | 'single_choice' | 'multiple_choice' | 'inline_text'
 
 // --------------------------------------------
 // Respondent Info Types
@@ -70,6 +70,8 @@ export interface QuestionRow {
   type: QuestionType
   content: string
   is_required: boolean
+  image_url: string | null
+  is_page_break: boolean
   parent_question_id: string | null
   trigger_option_ids: string[] | null
   created_at: string
@@ -136,6 +138,8 @@ export interface QuestionInsert {
   type: QuestionType
   content: string
   is_required?: boolean
+  image_url?: string | null
+  is_page_break?: boolean
   parent_question_id?: string | null
   trigger_option_ids?: string[] | null
 }
@@ -193,6 +197,8 @@ export interface QuestionUpdate {
   type?: QuestionType
   content?: string
   is_required?: boolean
+  image_url?: string | null
+  is_page_break?: boolean
   parent_question_id?: string | null
   trigger_option_ids?: string[] | null
 }

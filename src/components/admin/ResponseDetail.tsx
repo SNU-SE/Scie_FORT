@@ -1,22 +1,4 @@
-import type { Question, Option } from '@/types'
-
-interface ResponseSession {
-  id: string
-  survey_id: string
-  access_code_id: string
-  respondent_info: Record<string, string> | null
-  started_at: string
-  completed_at: string | null
-}
-
-interface Response {
-  id: string
-  session_id: string
-  question_id: string
-  option_id: string | null
-  text_response: string | null
-  created_at: string
-}
+import type { Question, Option, ResponseSession, Response } from '@/types'
 
 interface ResponseDetailProps {
   session: ResponseSession
@@ -63,7 +45,7 @@ export function ResponseDetail({
 
   const getOptionText = (optionId: string) => {
     const option = options.find((o) => o.id === optionId)
-    return option?.option_text ?? '-'
+    return option?.content ?? '-'
   }
 
   const renderResponse = (question: Question) => {
@@ -73,7 +55,7 @@ export function ResponseDetail({
       return <span className="text-gray-400 italic">응답 없음</span>
     }
 
-    if (question.question_type === 'text') {
+    if (question.type === 'text') {
       const textResponse = questionResponses[0]?.text_response
       return (
         <p className="text-gray-900 whitespace-pre-wrap">
@@ -89,7 +71,9 @@ export function ResponseDetail({
           <li key={response.id} className="flex items-center gap-2">
             <span className="w-1.5 h-1.5 bg-gray-900 rounded-full" />
             <span className="text-gray-900">
-              {response.option_id ? getOptionText(response.option_id) : '-'}
+              {response.selected_option_ids && response.selected_option_ids.length > 0
+                ? response.selected_option_ids.map(getOptionText).join(', ')
+                : '-'}
             </span>
           </li>
         ))}
@@ -98,8 +82,7 @@ export function ResponseDetail({
   }
 
   const sortedQuestions = [...questions]
-    .filter((q) => !q.is_page_break)
-    .sort((a, b) => a.order_num - b.order_num)
+    .sort((a, b) => a.order_index - b.order_index)
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
@@ -166,14 +149,14 @@ export function ResponseDetail({
               >
                 <div className="flex items-start gap-3 mb-3">
                   <span className="flex-shrink-0 px-2 py-0.5 text-xs font-medium text-white bg-gray-900 rounded">
-                    {question.order_num}
+                    {question.order_index}
                   </span>
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-xs text-gray-400">
-                        {getQuestionTypeLabel(question.question_type)}
+                        {getQuestionTypeLabel(question.type)}
                       </span>
-                      {question.required && (
+                      {question.is_required && (
                         <span className="text-xs text-error">필수</span>
                       )}
                       {question.parent_question_id && (
@@ -183,15 +166,8 @@ export function ResponseDetail({
                       )}
                     </div>
                     <p className="text-sm font-medium text-gray-900">
-                      {question.question_text}
+                      {question.content}
                     </p>
-                    {question.image_url && (
-                      <img
-                        src={question.image_url}
-                        alt=""
-                        className="mt-2 max-w-xs max-h-32 object-contain rounded"
-                      />
-                    )}
                   </div>
                 </div>
 

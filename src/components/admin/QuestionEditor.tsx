@@ -22,14 +22,13 @@ export function QuestionEditor({
   const [imageUrl, setImageUrl] = useState('')
   const [required, setRequired] = useState(false)
   const [currentOptions, setCurrentOptions] = useState<Option[]>([])
-  const [showConditionAdd, setShowConditionAdd] = useState(false)
 
   useEffect(() => {
     if (question) {
-      setQuestionType(question.question_type as QuestionType)
-      setQuestionText(question.question_text)
-      setImageUrl(question.image_url ?? '')
-      setRequired(question.required)
+      setQuestionType(question.type as QuestionType)
+      setQuestionText(question.content)
+      setImageUrl('')
+      setRequired(question.is_required)
     }
     if (options.length > 0) {
       setCurrentOptions(options)
@@ -44,20 +43,23 @@ export function QuestionEditor({
     const updatedQuestion: Question = {
       id: question?.id ?? crypto.randomUUID(),
       survey_id: question?.survey_id ?? '',
-      question_type: questionType,
-      question_text: questionText,
-      image_url: imageUrl || null,
-      required,
-      order_num: question?.order_num ?? 0,
+      type: questionType,
+      content: questionText,
+      is_required: required,
+      order_index: question?.order_index ?? 0,
+      page_index: question?.page_index ?? 0,
       parent_question_id: question?.parent_question_id ?? null,
+      trigger_option_ids: question?.trigger_option_ids ?? null,
+      image_url: imageUrl || null,
       is_page_break: false,
+      created_at: question?.created_at ?? new Date().toISOString(),
+      options: currentOptions,
     }
 
     onSave(updatedQuestion, isChoiceType ? currentOptions : [])
   }
 
   const handleAddCondition = (optionId: string) => {
-    setShowConditionAdd(true)
     // This will be handled by parent component
     console.log('Add condition for option:', optionId)
   }

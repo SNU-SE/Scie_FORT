@@ -10,7 +10,6 @@ import type {
   ResponseSession,
   ResponseSessionRow,
   ResponseSessionInsert,
-  Response,
   ResponseRow,
   ResponseInsert,
   RespondentInfo,

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button, Input, Card, LoadingSpinner } from '@/components/common'
+import { Button, Input, Card } from '@/components/common'
 import { useSurveyByCode } from '@/hooks'
 import { useResponseStore } from '@/stores/responseStore'
 
@@ -17,7 +17,7 @@ export default function CodeEntryPage() {
   const { setSurveyCode, resetStore } = useResponseStore()
 
   // Query for survey by code (enabled only when validating)
-  const { data: survey, isLoading, refetch } = useSurveyByCode(
+  const { isLoading, refetch } = useSurveyByCode(
     isValidating ? code.toUpperCase() : undefined
   )
 

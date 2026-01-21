@@ -65,7 +65,7 @@ export default function QuestionRenderer({
 
   const renderQuestionContent = () => {
     switch (question.type) {
-      case 'single_choice':
+      case 'single':
         return (
           <SingleChoice
             question={question}
@@ -75,7 +75,7 @@ export default function QuestionRenderer({
           />
         )
 
-      case 'multiple_choice':
+      case 'multiple':
         return (
           <MultipleChoice
             question={question}
@@ -86,20 +86,21 @@ export default function QuestionRenderer({
         )
 
       case 'text':
+        // Check if content has inline input placeholders
+        if (question.content && question.content.includes('{{input:')) {
+          return (
+            <InlineTextInput
+              question={question}
+              value={textResponses}
+              onChange={handleInlineTextChange}
+            />
+          )
+        }
         return (
           <TextInput
             question={question}
             value={textResponses.main || ''}
             onChange={handleTextChange}
-          />
-        )
-
-      case 'inline_text':
-        return (
-          <InlineTextInput
-            question={question}
-            value={textResponses}
-            onChange={handleInlineTextChange}
           />
         )
 
@@ -144,7 +145,7 @@ export default function QuestionRenderer({
           {questionNumber !== undefined && (
             <span className="mr-2">{questionNumber}.</span>
           )}
-          {question.type !== 'inline_text' && question.content}
+          {!(question.type === 'text' && question.content?.includes('{{input:')) && question.content}
           {question.is_required && (
             <span className="text-red-500 ml-1">*</span>
           )}

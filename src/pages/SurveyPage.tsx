@@ -4,7 +4,7 @@ import { SurveyLayout, LoadingSpinner, Card, Button } from '@/components/common'
 import { QuestionRenderer, ProgressBar, PageNavigator } from '@/components/survey'
 import { useSurveyByCode, useSubmitSurveyResponse } from '@/hooks'
 import { useResponseStore } from '@/stores/responseStore'
-import type { Question, SurveyPage as SurveyPageType, QuestionResponse } from '@/types'
+import type { Question, QuestionResponse } from '@/types'
 import type { ResponseValue } from '@/components/survey'
 
 // ============================================
@@ -347,8 +347,6 @@ export default function SurveyPage() {
 
         {/* Page Navigator */}
         <PageNavigator
-          currentPage={currentPage + 1}
-          totalPages={totalPages}
           onPrevious={handlePrevious}
           onNext={handleNext}
           onSubmit={handleSubmit}

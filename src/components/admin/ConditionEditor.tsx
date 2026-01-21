@@ -26,10 +26,10 @@ export function ConditionEditor({
 
   useEffect(() => {
     if (conditionalQuestion) {
-      setQuestionType(conditionalQuestion.question_type as QuestionType)
-      setQuestionText(conditionalQuestion.question_text)
-      setImageUrl(conditionalQuestion.image_url ?? '')
-      setRequired(conditionalQuestion.required)
+      setQuestionType(conditionalQuestion.type as QuestionType)
+      setQuestionText(conditionalQuestion.content)
+      setImageUrl('')
+      setRequired(conditionalQuestion.is_required)
     }
   }, [conditionalQuestion])
 
@@ -52,13 +52,17 @@ export function ConditionEditor({
     const newQuestion: Question = {
       id: conditionalQuestion?.id ?? crypto.randomUUID(),
       survey_id: parentQuestion.survey_id,
-      question_type: questionType,
-      question_text: questionText,
-      image_url: imageUrl || null,
-      required,
-      order_num: conditionalQuestion?.order_num ?? parentQuestion.order_num + 1,
+      type: questionType,
+      content: questionText,
+      is_required: required,
+      order_index: conditionalQuestion?.order_index ?? parentQuestion.order_index + 1,
+      page_index: parentQuestion.page_index,
       parent_question_id: parentQuestion.id,
+      trigger_option_ids: null,
+      image_url: imageUrl || null,
       is_page_break: false,
+      created_at: conditionalQuestion?.created_at ?? new Date().toISOString(),
+      options: [],
     }
 
     onSave(newQuestion, selectedOptionIds)
@@ -71,7 +75,7 @@ export function ConditionEditor({
           조건부 질문 설정
         </h3>
         <p className="text-sm text-gray-400">
-          부모 질문: {parentQuestion.question_text}
+          부모 질문: {parentQuestion.content}
         </p>
       </div>
 
@@ -100,7 +104,7 @@ export function ConditionEditor({
                   className="w-4 h-4 accent-gray-900"
                 />
                 <span className="text-sm text-gray-900">
-                  {option.option_text || `옵션 ${option.order_num}`}
+                  {option.content || `옵션 ${option.order_index}`}
                 </span>
               </label>
             ))}

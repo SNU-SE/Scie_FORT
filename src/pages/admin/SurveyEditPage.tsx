@@ -19,11 +19,10 @@ import {
   useUpdateSurvey,
   useCreateQuestion,
   useUpdateQuestion,
-  useDeleteQuestion,
   useAuth,
 } from '@/hooks'
 import { useSurveyStore } from '@/stores/surveyStore'
-import type { Survey, Question, Option, RespondentField } from '@/types'
+import type { Survey, Question, RespondentField } from '@/types'
 
 // 임시 ID 생성 (클라이언트 사이드)
 const generateTempId = () => `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
@@ -52,7 +51,6 @@ export default function SurveyEditPage() {
     selectQuestion,
     openQuestionEditor,
     closeQuestionEditor,
-    openConditionEditor,
     closeConditionEditor,
     resetStore,
   } = useSurveyStore()
@@ -63,7 +61,6 @@ export default function SurveyEditPage() {
   const updateSurveyMutation = useUpdateSurvey()
   const createQuestionMutation = useCreateQuestion()
   const updateQuestionMutation = useUpdateQuestion()
-  const deleteQuestionMutation = useDeleteQuestion()
 
   // Local state
   const [isSaving, setIsSaving] = useState(false)
@@ -138,6 +135,8 @@ export default function SurveyEditPage() {
       trigger_option_ids: null,
       created_at: new Date().toISOString(),
       options: [],
+      image_url: null,
+      is_page_break: false,
     }
     addQuestion(newQuestion)
     selectQuestion(newQuestion.id)
@@ -146,13 +145,13 @@ export default function SurveyEditPage() {
   }, [survey, questions.length, addQuestion, selectQuestion, openQuestionEditor])
 
   // 페이지 나눔 추가
-  const handleAddPageBreak = useCallback(() => {
-    console.log('[SurveyEditPage.handleAddPageBreak] called')
+  const handleAddPageBreak = useCallback((afterIndex: number) => {
+    console.log('[SurveyEditPage.handleAddPageBreak] called', { afterIndex })
     const newQuestion: Question = {
       id: generateTempId(),
       survey_id: survey?.id || '',
       page_index: questions.filter((q) => q.type === 'single' && q.content === '__PAGE_BREAK__').length + 1,
-      order_index: questions.length,
+      order_index: afterIndex + 1,
       type: 'single',
       content: '__PAGE_BREAK__',
       is_required: false,
@@ -160,17 +159,19 @@ export default function SurveyEditPage() {
       trigger_option_ids: null,
       created_at: new Date().toISOString(),
       options: [],
+      image_url: null,
+      is_page_break: true,
     }
     addQuestion(newQuestion)
     console.log('[SurveyEditPage] state changed', { pageBreakAdded: true })
   }, [survey, questions, addQuestion])
 
   // 문항 편집
-  const handleEditQuestion = useCallback((question: Question) => {
-    console.log('[SurveyEditPage.handleEditQuestion] called', { questionId: question.id })
-    selectQuestion(question.id)
+  const handleEditQuestion = useCallback((questionId: string) => {
+    console.log('[SurveyEditPage.handleEditQuestion] called', { questionId })
+    selectQuestion(questionId)
     openQuestionEditor()
-    console.log('[SurveyEditPage] state changed', { selectedQuestionId: question.id, isQuestionEditorOpen: true })
+    console.log('[SurveyEditPage] state changed', { selectedQuestionId: questionId, isQuestionEditorOpen: true })
   }, [selectQuestion, openQuestionEditor])
 
   // 문항 저장 (에디터에서)
@@ -190,17 +191,10 @@ export default function SurveyEditPage() {
     }
   }, [removeQuestion])
 
-  // 조건 편집 열기
-  const handleOpenConditionEditor = useCallback((parentQuestion: Question, parentOptions: Option[]) => {
-    console.log('[SurveyEditPage.handleOpenConditionEditor] called', { parentQuestionId: parentQuestion.id })
-    openConditionEditor(parentQuestion, parentOptions)
-    console.log('[SurveyEditPage] state changed', { isConditionEditorOpen: true })
-  }, [openConditionEditor])
-
   // 조건 저장
-  const handleSaveCondition = useCallback((questionId: string, triggerOptionIds: string[]) => {
-    console.log('[SurveyEditPage.handleSaveCondition] called', { questionId, triggerOptionIds })
-    updateQuestion(questionId, { trigger_option_ids: triggerOptionIds })
+  const handleSaveCondition = useCallback((question: Question, triggerOptionIds: string[]) => {
+    console.log('[SurveyEditPage.handleSaveCondition] called', { questionId: question.id, triggerOptionIds })
+    updateQuestion(question.id, { trigger_option_ids: triggerOptionIds })
     closeConditionEditor()
     console.log('[SurveyEditPage] state changed', { conditionSaved: true, isConditionEditorOpen: false })
   }, [updateQuestion, closeConditionEditor])
@@ -261,19 +255,22 @@ export default function SurveyEditPage() {
           if (question.id.startsWith('temp_')) {
             // 새 문항 생성
             await createQuestionMutation.mutateAsync({
-              survey_id: savedSurveyId,
-              page_index: question.page_index,
-              order_index: question.order_index,
-              type: question.type,
-              content: question.content,
-              is_required: question.is_required,
-              parent_question_id: question.parent_question_id,
-              trigger_option_ids: question.trigger_option_ids,
+              data: {
+                survey_id: savedSurveyId,
+                page_index: question.page_index,
+                order_index: question.order_index,
+                type: question.type,
+                content: question.content,
+                is_required: question.is_required,
+                parent_question_id: question.parent_question_id,
+                trigger_option_ids: question.trigger_option_ids,
+              },
             })
           } else if (!isPageBreak) {
             // 기존 문항 업데이트
             await updateQuestionMutation.mutateAsync({
               id: question.id,
+              surveyId: savedSurveyId,
               data: {
                 page_index: question.page_index,
                 order_index: question.order_index,
@@ -374,8 +371,10 @@ export default function SurveyEditPage() {
                   접속 코드 관리
                 </h2>
                 <CodeManager
-                  surveyId={survey.id}
-                  accessCodes={survey.access_codes || []}
+                  codes={survey.access_codes || []}
+                  onGenerate={() => console.log('Generate code')}
+                  onToggleActive={(codeId) => console.log('Toggle active:', codeId)}
+                  onDelete={(codeId) => console.log('Delete code:', codeId)}
                 />
               </div>
             )}
@@ -394,7 +393,7 @@ export default function SurveyEditPage() {
                 onEdit={handleEditQuestion}
                 onDelete={handleDeleteQuestion}
                 onReorder={reorderQuestions}
-                onOpenConditionEditor={handleOpenConditionEditor}
+                onAddPageBreak={handleAddPageBreak}
               />
 
               {/* 문항 추가 버튼들 */}
@@ -402,7 +401,7 @@ export default function SurveyEditPage() {
                 <Button onClick={handleAddQuestion}>
                   + 문항 추가
                 </Button>
-                <Button variant="outline" onClick={handleAddPageBreak}>
+                <Button variant="outline" onClick={() => handleAddPageBreak(questions.length)}>
                   + 페이지 나눔
                 </Button>
               </div>
@@ -445,7 +444,7 @@ export default function SurveyEditPage() {
       >
         {conditionParentQuestion && selectedQuestion && (
           <ConditionEditor
-            question={selectedQuestion}
+            conditionalQuestion={selectedQuestion}
             parentQuestion={conditionParentQuestion}
             parentOptions={conditionParentOptions}
             onSave={handleSaveCondition}

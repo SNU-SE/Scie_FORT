@@ -13,6 +13,8 @@ interface InputProps {
   className?: string
   name?: string
   id?: string
+  autoComplete?: string
+  autoFocus?: boolean
 }
 
 const Input: React.FC<InputProps> = ({
@@ -28,6 +30,8 @@ const Input: React.FC<InputProps> = ({
   className = '',
   name,
   id,
+  autoComplete,
+  autoFocus,
 }) => {
   const inputId = id || name || label?.replace(/\s/g, '-').toLowerCase()
 
@@ -61,6 +65,8 @@ const Input: React.FC<InputProps> = ({
         placeholder={placeholder}
         disabled={disabled}
         required={required}
+        autoComplete={autoComplete}
+        autoFocus={autoFocus}
         className={`${baseInputStyles} ${inputStateStyles} ${disabledStyles}`}
         aria-invalid={!!error}
         aria-describedby={error ? `${inputId}-error` : helperText ? `${inputId}-helper` : undefined}

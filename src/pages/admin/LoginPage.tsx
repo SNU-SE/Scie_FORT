@@ -109,9 +109,9 @@ export default function LoginPage() {
                 id="email"
                 type="email"
                 value={email}
-                onChange={(e) => {
-                  console.log('[LoginPage.handleEmailChange] called', { email: e.target.value })
-                  setEmail(e.target.value)
+                onChange={(value) => {
+                  console.log('[LoginPage.handleEmailChange] called', { email: value })
+                  setEmail(value)
                 }}
                 placeholder="admin@example.com"
                 disabled={isSubmitting}
@@ -132,9 +132,9 @@ export default function LoginPage() {
                 id="password"
                 type="password"
                 value={password}
-                onChange={(e) => {
+                onChange={(value) => {
                   console.log('[LoginPage.handlePasswordChange] called')
-                  setPassword(e.target.value)
+                  setPassword(value)
                 }}
                 placeholder="비밀번호를 입력하세요"
                 disabled={isSubmitting}

@@ -31,30 +31,22 @@ export function ExcelExport({ surveyId, surveyTitle }: ExcelExportProps) {
 
     try {
       // Fetch all data
-      const [questionsRes, optionsRes, sessionsRes, responsesRes] = await Promise.all([
+      const [questionsRes, sessionsRes] = await Promise.all([
         supabase
           .from('questions')
           .select('*')
           .eq('survey_id', surveyId)
           .eq('is_page_break', false)
-          .order('order_num'),
-        supabase
-          .from('options')
-          .select('*')
-          .eq('question_id', surveyId),
+          .order('order_index'),
         supabase
           .from('response_sessions')
           .select('*')
           .eq('survey_id', surveyId)
           .not('completed_at', 'is', null)
           .order('completed_at'),
-        supabase
-          .from('responses')
-          .select('*'),
       ])
 
       const questions: Question[] = questionsRes.data ?? []
-      const allOptions: Option[] = optionsRes.data ?? []
       const sessions: ResponseSession[] = sessionsRes.data ?? []
 
       // Get options for all questions
@@ -89,7 +81,7 @@ export function ExcelExport({ surveyId, surveyTitle }: ExcelExportProps) {
         '#',
         ...infoKeys,
         '제출 시간',
-        ...questions.map((q) => q.question_text),
+        ...questions.map((q) => q.content),
       ]
 
       // Build rows
@@ -114,13 +106,13 @@ export function ExcelExport({ surveyId, surveyTitle }: ExcelExportProps) {
             (r) => r.session_id === session.id && r.question_id === question.id
           )
 
-          if (question.question_type === 'text') {
+          if (question.type === 'text') {
             row.push(questionResponses[0]?.text_response ?? '')
           } else {
             const selectedOptions = questionResponses
               .map((r) => {
                 const option = options.find((o) => o.id === r.option_id)
-                return option?.option_text ?? ''
+                return option?.content ?? ''
               })
               .filter(Boolean)
             row.push(selectedOptions.join(', '))

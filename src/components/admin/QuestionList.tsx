@@ -73,10 +73,10 @@ export function QuestionList({
     const [removed] = reordered.splice(draggedIndex, 1)
     reordered.splice(dropIndex, 0, removed)
 
-    // Update order_num for all questions
+    // Update order_index for all questions
     const updatedQuestions = reordered.map((q, i) => ({
       ...q,
-      order_num: i + 1,
+      order_index: i + 1,
     }))
 
     onReorder(updatedQuestions)
@@ -105,7 +105,7 @@ export function QuestionList({
     <div className="space-y-2">
       {questions.map((question, index) => {
         const isConditional = !!question.parent_question_id
-        const isPageBreak = question.is_page_break
+        const isPageBreak = false // Page breaks are handled separately in the new schema
 
         if (isPageBreak) {
           return (
@@ -184,12 +184,12 @@ export function QuestionList({
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-xs font-medium text-gray-900 bg-gray-200 px-2 py-0.5 rounded">
-                  {question.order_num}
+                  {question.order_index}
                 </span>
                 <span className="text-xs text-gray-400">
-                  {getQuestionTypeLabel(question.question_type)}
+                  {getQuestionTypeLabel(question.type)}
                 </span>
-                {question.required && (
+                {question.is_required && (
                   <span className="text-xs text-error">필수</span>
                 )}
                 {isConditional && (
@@ -199,7 +199,7 @@ export function QuestionList({
                 )}
               </div>
               <p className="text-sm text-gray-900 truncate">
-                {question.question_text}
+                {question.content}
               </p>
             </div>
 

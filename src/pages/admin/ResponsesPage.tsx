@@ -25,15 +25,9 @@ export default function ResponsesPage() {
   } = useResponsesBySurvey(surveyId)
 
   // 실시간 응답 업데이트
-  useRealtimeResponses(surveyId, {
-    onInsert: () => {
-      console.log('[ResponsesPage] realtime insert received')
-      refetchResponses()
-    },
-    onUpdate: () => {
-      console.log('[ResponsesPage] realtime update received')
-      refetchResponses()
-    },
+  useRealtimeResponses(surveyId, () => {
+    console.log('[ResponsesPage] realtime response received')
+    refetchResponses()
   })
 
   // 상세 보기 모달 상태
@@ -113,8 +107,9 @@ export default function ResponsesPage() {
   }
 
   // 상세 보기 열기
-  const handleViewDetail = (response: ResponseSession) => {
-    console.log('[ResponsesPage.handleViewDetail] called', { responseId: response.id })
+  const handleViewDetail = (sessionId: string) => {
+    console.log('[ResponsesPage.handleViewDetail] called', { sessionId })
+    const response = responses?.find(r => r.id === sessionId) || null
     setSelectedResponse(response)
     console.log('[ResponsesPage] state changed', { selectedResponse: response })
   }
@@ -195,8 +190,6 @@ export default function ResponsesPage() {
             <ExcelExport
               surveyId={surveyId!}
               surveyTitle={survey.title}
-              responses={responses || []}
-              questions={survey.questions || []}
             />
           </div>
         </div>
@@ -237,9 +230,9 @@ export default function ResponsesPage() {
 
           {responses && responses.length > 0 ? (
             <ResponseTable
-              responses={responses}
-              respondentFields={survey.respondent_fields || []}
+              sessions={responses}
               onViewDetail={handleViewDetail}
+              onDelete={(sessionId) => console.log('Delete session:', sessionId)}
             />
           ) : (
             <div className="text-center py-12 bg-gray-50 rounded-lg">
@@ -258,9 +251,10 @@ export default function ResponsesPage() {
       >
         {selectedResponse && (
           <ResponseDetail
-            response={selectedResponse}
+            session={selectedResponse}
+            responses={[]}
             questions={survey.questions || []}
-            respondentFields={survey.respondent_fields || []}
+            options={(survey.questions || []).flatMap(q => q.options || [])}
             onClose={handleCloseDetail}
           />
         )}

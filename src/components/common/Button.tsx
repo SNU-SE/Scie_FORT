@@ -2,7 +2,7 @@ import React from 'react'
 import LoadingSpinner from './LoadingSpinner'
 
 interface ButtonProps {
-  variant?: 'primary' | 'secondary' | 'outline' | 'ghost'
+  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger'
   size?: 'sm' | 'md' | 'lg'
   isLoading?: boolean
   disabled?: boolean
@@ -29,6 +29,7 @@ const Button: React.FC<ButtonProps> = ({
     secondary: 'bg-gray-200 text-gray-900 hover:bg-gray-100 disabled:bg-gray-100 disabled:text-gray-400',
     outline: 'border-2 border-primary-black text-primary-black bg-transparent hover:bg-gray-100 disabled:border-gray-400 disabled:text-gray-400',
     ghost: 'bg-transparent text-gray-900 hover:bg-gray-100 disabled:text-gray-400',
+    danger: 'bg-red-600 text-white hover:bg-red-700 disabled:bg-red-300',
   }
 
   const sizeStyles = {

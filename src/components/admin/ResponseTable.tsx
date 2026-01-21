@@ -1,24 +1,13 @@
-import type { Question } from '@/types'
-
-interface ResponseSession {
-  id: string
-  survey_id: string
-  access_code_id: string
-  respondent_info: Record<string, string> | null
-  started_at: string
-  completed_at: string | null
-}
+import type { ResponseSession } from '@/types'
 
 interface ResponseTableProps {
   sessions: ResponseSession[]
-  questions: Question[]
   onViewDetail: (sessionId: string) => void
   onDelete: (sessionId: string) => void
 }
 
 export function ResponseTable({
   sessions,
-  questions,
   onViewDetail,
   onDelete,
 }: ResponseTableProps) {

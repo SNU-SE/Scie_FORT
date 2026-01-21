@@ -10,7 +10,6 @@ interface AccessCode {
 }
 
 interface CodeManagerProps {
-  surveyId: string
   codes: AccessCode[]
   onGenerate: () => void
   onToggleActive: (codeId: string) => void
@@ -18,7 +17,6 @@ interface CodeManagerProps {
 }
 
 export function CodeManager({
-  surveyId,
   codes,
   onGenerate,
   onToggleActive,

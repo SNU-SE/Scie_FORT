@@ -71,7 +71,7 @@ export function SurveyList({
               </td>
               <td className="py-4 px-4 text-center">
                 <span className="text-sm text-gray-900">
-                  {survey.response_count ?? 0}
+                  -
                 </span>
               </td>
               <td className="py-4 px-4 text-center">

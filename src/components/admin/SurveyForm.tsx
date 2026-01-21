@@ -9,11 +9,12 @@ interface SurveyFormData {
 }
 
 interface SurveyFormProps {
-  survey?: Survey
-  onSave: (data: SurveyFormData) => void
+  survey?: Partial<Survey> | null
+  onSave?: (data: SurveyFormData) => void
+  onChange?: (data: Partial<Survey>) => void
 }
 
-export function SurveyForm({ survey, onSave }: SurveyFormProps) {
+export function SurveyForm({ survey, onSave, onChange }: SurveyFormProps) {
   const [formData, setFormData] = useState<SurveyFormData>({
     title: '',
     description: '',
@@ -24,17 +25,22 @@ export function SurveyForm({ survey, onSave }: SurveyFormProps) {
   useEffect(() => {
     if (survey) {
       setFormData({
-        title: survey.title,
+        title: survey.title ?? '',
         description: survey.description ?? '',
-        collect_respondent_info: survey.collect_respondent_info,
-        is_active: survey.is_active,
+        collect_respondent_info: survey.collect_respondent_info ?? true,
+        is_active: survey.is_active ?? false,
       })
     }
   }, [survey])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    onSave(formData)
+    onSave?.(formData)
+  }
+
+  const handleChange = (field: keyof SurveyFormData, value: string | boolean) => {
+    setFormData((prev) => ({ ...prev, [field]: value }))
+    onChange?.({ [field]: value })
   }
 
   return (
@@ -50,9 +56,7 @@ export function SurveyForm({ survey, onSave }: SurveyFormProps) {
           type="text"
           id="title"
           value={formData.title}
-          onChange={(e) =>
-            setFormData((prev) => ({ ...prev, title: e.target.value }))
-          }
+          onChange={(e) => handleChange('title', e.target.value)}
           className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:border-gray-900 transition-colors"
           placeholder="설문 제목을 입력하세요"
           required
@@ -69,9 +73,7 @@ export function SurveyForm({ survey, onSave }: SurveyFormProps) {
         <textarea
           id="description"
           value={formData.description}
-          onChange={(e) =>
-            setFormData((prev) => ({ ...prev, description: e.target.value }))
-          }
+          onChange={(e) => handleChange('description', e.target.value)}
           rows={4}
           className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:border-gray-900 transition-colors resize-none"
           placeholder="설문에 대한 설명을 입력하세요"
@@ -87,12 +89,7 @@ export function SurveyForm({ survey, onSave }: SurveyFormProps) {
         </div>
         <button
           type="button"
-          onClick={() =>
-            setFormData((prev) => ({
-              ...prev,
-              collect_respondent_info: !prev.collect_respondent_info,
-            }))
-          }
+          onClick={() => handleChange('collect_respondent_info', !formData.collect_respondent_info)}
           className={`relative w-12 h-6 rounded-full transition-colors ${
             formData.collect_respondent_info ? 'bg-gray-900' : 'bg-gray-200'
           }`}
@@ -114,12 +111,7 @@ export function SurveyForm({ survey, onSave }: SurveyFormProps) {
         </div>
         <button
           type="button"
-          onClick={() =>
-            setFormData((prev) => ({
-              ...prev,
-              is_active: !prev.is_active,
-            }))
-          }
+          onClick={() => handleChange('is_active', !formData.is_active)}
           className={`relative w-12 h-6 rounded-full transition-colors ${
             formData.is_active ? 'bg-gray-900' : 'bg-gray-200'
           }`}

@@ -1,8 +1,6 @@
 'use client'
 
 interface PageNavigatorProps {
-  currentPage: number
-  totalPages: number
   onPrevious: () => void
   onNext: () => void
   onSubmit: () => void
@@ -12,8 +10,6 @@ interface PageNavigatorProps {
 }
 
 export default function PageNavigator({
-  currentPage,
-  totalPages,
   onPrevious,
   onNext,
   onSubmit,

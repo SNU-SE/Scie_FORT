@@ -20,8 +20,9 @@ export function OptionEditor({
     const newOption: Option = {
       id: crypto.randomUUID(),
       question_id: options[0]?.question_id ?? '',
-      option_text: '',
-      order_num: options.length + 1,
+      content: '',
+      order_index: options.length + 1,
+      created_at: new Date().toISOString(),
     }
     onChange([...options, newOption])
   }
@@ -29,14 +30,14 @@ export function OptionEditor({
   const handleDeleteOption = (index: number) => {
     const updated = options.filter((_, i) => i !== index).map((opt, i) => ({
       ...opt,
-      order_num: i + 1,
+      order_index: i + 1,
     }))
     onChange(updated)
   }
 
   const handleOptionChange = (index: number, text: string) => {
     const updated = options.map((opt, i) =>
-      i === index ? { ...opt, option_text: text } : opt
+      i === index ? { ...opt, content: text } : opt
     )
     onChange(updated)
   }
@@ -82,7 +83,7 @@ export function OptionEditor({
 
     const updatedOptions = reordered.map((opt, i) => ({
       ...opt,
-      order_num: i + 1,
+      order_index: i + 1,
     }))
 
     onChange(updatedOptions)
@@ -137,12 +138,12 @@ export function OptionEditor({
             </div>
 
             <span className="text-xs font-medium text-gray-400 w-6 text-center">
-              {option.order_num}
+              {option.order_index}
             </span>
 
             <input
               type="text"
-              value={option.option_text}
+              value={option.content}
               onChange={(e) => handleOptionChange(index, e.target.value)}
               className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded focus:outline-none focus:border-gray-900 transition-colors"
               placeholder="선택지 내용을 입력하세요"
