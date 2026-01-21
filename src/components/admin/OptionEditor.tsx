@@ -18,7 +18,7 @@ export function OptionEditor({
 
   const handleAddOption = () => {
     const newOption: Option = {
-      id: crypto.randomUUID(),
+      id: `temp_${crypto.randomUUID()}`,
       question_id: options[0]?.question_id ?? '',
       content: '',
       order_index: options.length + 1,

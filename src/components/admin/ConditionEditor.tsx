@@ -82,7 +82,7 @@ export function ConditionEditor({
     }
 
     const newQuestion: Question = {
-      id: conditionalQuestion?.id ?? crypto.randomUUID(),
+      id: conditionalQuestion?.id ?? `temp_${crypto.randomUUID()}`,
       survey_id: parentQuestion.survey_id,
       type: questionType,
       content: questionText,

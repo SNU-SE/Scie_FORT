@@ -43,7 +43,7 @@ export function QuestionEditor({
     e.preventDefault()
 
     const updatedQuestion: Question = {
-      id: question?.id ?? crypto.randomUUID(),
+      id: question?.id ?? `temp_${crypto.randomUUID()}`,
       survey_id: question?.survey_id ?? '',
       type: questionType,
       content: questionText,
