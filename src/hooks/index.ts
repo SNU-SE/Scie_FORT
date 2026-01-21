@@ -27,6 +27,7 @@ export {
   useUpdateSurveyPage,
   useDeleteSurveyPage,
   useCreateAccessCode,
+  useUpdateAccessCode,
   useDeleteAccessCode,
 } from './useSurvey'
 

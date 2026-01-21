@@ -19,6 +19,9 @@ import {
   useUpdateSurvey,
   useCreateQuestion,
   useUpdateQuestion,
+  useCreateAccessCode,
+  useUpdateAccessCode,
+  useDeleteAccessCode,
   useAuth,
 } from '@/hooks'
 import { useSurveyStore } from '@/stores/surveyStore'
@@ -62,6 +65,9 @@ export default function SurveyEditPage() {
   const updateSurveyMutation = useUpdateSurvey()
   const createQuestionMutation = useCreateQuestion()
   const updateQuestionMutation = useUpdateQuestion()
+  const createAccessCodeMutation = useCreateAccessCode()
+  const updateAccessCodeMutation = useUpdateAccessCode()
+  const deleteAccessCodeMutation = useDeleteAccessCode()
 
   // Local state
   const [isSaving, setIsSaving] = useState(false)
@@ -474,6 +480,67 @@ export default function SurveyEditPage() {
     }
   }
 
+  // 접근 코드 생성
+  const handleGenerateCode = useCallback(async () => {
+    if (!survey?.id) return
+    console.log('[SurveyEditPage.handleGenerateCode] called')
+
+    // 랜덤 코드 생성 (6자리 영숫자)
+    const randomCode = Math.random().toString(36).substring(2, 8).toUpperCase()
+
+    try {
+      await createAccessCodeMutation.mutateAsync({
+        survey_id: survey.id,
+        code: randomCode,
+        is_active: true,
+      })
+      console.log('[SurveyEditPage.handleGenerateCode] success', { code: randomCode })
+    } catch (error) {
+      console.error('[SurveyEditPage.handleGenerateCode] error', error)
+      alert('코드 생성에 실패했습니다.')
+    }
+  }, [survey?.id, createAccessCodeMutation])
+
+  // 접근 코드 활성/비활성 토글
+  const handleToggleActive = useCallback(async (codeId: string) => {
+    if (!survey?.id) return
+    console.log('[SurveyEditPage.handleToggleActive] called', { codeId })
+
+    const code = survey.access_codes?.find(c => c.id === codeId)
+    if (!code) return
+
+    try {
+      await updateAccessCodeMutation.mutateAsync({
+        id: codeId,
+        surveyId: survey.id,
+        data: { is_active: !code.is_active },
+      })
+      console.log('[SurveyEditPage.handleToggleActive] success', { codeId, newStatus: !code.is_active })
+    } catch (error) {
+      console.error('[SurveyEditPage.handleToggleActive] error', error)
+      alert('코드 상태 변경에 실패했습니다.')
+    }
+  }, [survey?.id, survey?.access_codes, updateAccessCodeMutation])
+
+  // 접근 코드 삭제
+  const handleDeleteCode = useCallback(async (codeId: string) => {
+    if (!survey?.id) return
+    console.log('[SurveyEditPage.handleDeleteCode] called', { codeId })
+
+    if (!confirm('이 접근 코드를 삭제하시겠습니까?')) return
+
+    try {
+      await deleteAccessCodeMutation.mutateAsync({
+        id: codeId,
+        surveyId: survey.id,
+      })
+      console.log('[SurveyEditPage.handleDeleteCode] success', { codeId })
+    } catch (error) {
+      console.error('[SurveyEditPage.handleDeleteCode] error', error)
+      alert('코드 삭제에 실패했습니다.')
+    }
+  }, [survey?.id, deleteAccessCodeMutation])
+
   // 로딩 중
   if (!isNew && isLoading) {
     return (
@@ -542,9 +609,9 @@ export default function SurveyEditPage() {
                 </h2>
                 <CodeManager
                   codes={survey.access_codes || []}
-                  onGenerate={() => console.log('Generate code')}
-                  onToggleActive={(codeId) => console.log('Toggle active:', codeId)}
-                  onDelete={(codeId) => console.log('Delete code:', codeId)}
+                  onGenerate={handleGenerateCode}
+                  onToggleActive={handleToggleActive}
+                  onDelete={handleDeleteCode}
                 />
               </div>
             )}

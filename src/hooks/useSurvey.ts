@@ -23,6 +23,7 @@ import type {
   SurveyPageUpdate,
   AccessCodeRow,
   AccessCodeInsert,
+  AccessCodeUpdate,
   ApiError,
 } from '@/types'
 
@@ -606,6 +607,32 @@ async function deleteAccessCode(id: string): Promise<void> {
   }
 }
 
+/**
+ * 접근 코드 수정
+ */
+async function updateAccessCode(id: string, data: AccessCodeUpdate): Promise<AccessCodeRow> {
+  console.log('[useSurvey.updateAccessCode] called', { id, data })
+  try {
+    console.log('[useSurvey.updateAccessCode] API request', { id, data })
+    const { data: code, error } = await supabase
+      .from('access_codes')
+      .update(data)
+      .eq('id', id)
+      .select()
+      .single()
+
+    console.log('[useSurvey.updateAccessCode] API response', { code, error })
+    if (error) {
+      console.error('[useSurvey.updateAccessCode] error', error)
+      throw error
+    }
+    return code
+  } catch (error) {
+    console.error('[useSurvey.updateAccessCode] catch error', error)
+    throw error
+  }
+}
+
 // ============================================
 // React Query Hooks
 // ============================================
@@ -986,6 +1013,29 @@ export function useDeleteAccessCode(): UseMutationResult<
   })
 }
 
+/**
+ * 접근 코드 수정 Hook
+ */
+export function useUpdateAccessCode(): UseMutationResult<
+  AccessCodeRow,
+  ApiError,
+  { id: string; surveyId: string; data: AccessCodeUpdate }
+> {
+  const queryClient = useQueryClient()
+  console.log('[useUpdateAccessCode] hook called')
+
+  return useMutation({
+    mutationFn: ({ id, data }) => updateAccessCode(id, data),
+    onSuccess: (_, variables) => {
+      console.log('[useUpdateAccessCode] onSuccess', { variables })
+      queryClient.invalidateQueries({ queryKey: surveyKeys.detail(variables.surveyId) })
+    },
+    onError: (error) => {
+      console.error('[useUpdateAccessCode] onError', error)
+    },
+  })
+}
+
 export default {
   useSurveys,
   useSurveyDetail,
@@ -1005,4 +1055,5 @@ export default {
   useDeleteSurveyPage,
   useCreateAccessCode,
   useDeleteAccessCode,
+  useUpdateAccessCode,
 }
