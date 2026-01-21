@@ -11,7 +11,7 @@ import type { Survey } from '@/types'
 
 export default function DashboardPage() {
   const navigate = useNavigate()
-  const { user } = useAuth()
+  const { user, logout } = useAuth()
 
   // 설문 목록 조회
   const { data: surveys, isLoading, error, refetch } = useSurveys(user?.id)
@@ -128,8 +128,15 @@ export default function DashboardPage() {
     }
   }
 
+  // 로그아웃 핸들러
+  const handleLogout = async () => {
+    console.log('[DashboardPage.handleLogout] called')
+    await logout()
+    navigate('/admin/login')
+  }
+
   return (
-    <AdminLayout>
+    <AdminLayout onLogout={handleLogout}>
       <div className="p-6">
         {/* 헤더 */}
         <div className="flex justify-between items-center mb-6">

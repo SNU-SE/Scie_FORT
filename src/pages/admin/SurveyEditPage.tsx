@@ -33,7 +33,7 @@ const generateTempId = () => `temp_${Date.now()}_${Math.random().toString(36).su
 export default function SurveyEditPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { user } = useAuth()
+  const { user, logout } = useAuth()
   const isNew = id === 'new'
 
   // Store
@@ -571,10 +571,17 @@ export default function SurveyEditPage() {
     }
   }, [survey?.id, deleteAccessCodeMutation])
 
+  // 로그아웃 핸들러
+  const handleLogout = async () => {
+    console.log('[SurveyEditPage.handleLogout] called')
+    await logout()
+    navigate('/admin/login')
+  }
+
   // 로딩 중
   if (!isNew && isLoading) {
     return (
-      <AdminLayout>
+      <AdminLayout onLogout={handleLogout}>
         <div className="flex justify-center items-center h-96">
           <LoadingSpinner />
         </div>
@@ -583,7 +590,7 @@ export default function SurveyEditPage() {
   }
 
   return (
-    <AdminLayout>
+    <AdminLayout onLogout={handleLogout}>
       <div className="p-6">
         {/* 에러 메시지 */}
         {saveError && (
