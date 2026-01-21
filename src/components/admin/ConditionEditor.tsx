@@ -3,6 +3,9 @@ import type { Question, Option } from '@/types'
 
 type QuestionType = 'single' | 'multiple' | 'text'
 
+// 임시 옵션 ID 생성
+const generateTempOptionId = () => `temp_opt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+
 interface ConditionEditorProps {
   parentQuestion: Question
   parentOptions: Option[]
@@ -23,6 +26,7 @@ export function ConditionEditor({
   const [questionText, setQuestionText] = useState('')
   const [imageUrl, setImageUrl] = useState('')
   const [required, setRequired] = useState(false)
+  const [questionOptions, setQuestionOptions] = useState<Option[]>([])
 
   useEffect(() => {
     if (conditionalQuestion) {
@@ -30,8 +34,36 @@ export function ConditionEditor({
       setQuestionText(conditionalQuestion.content)
       setImageUrl('')
       setRequired(conditionalQuestion.is_required)
+      setQuestionOptions(conditionalQuestion.options || [])
     }
   }, [conditionalQuestion])
+
+  const isChoiceType = questionType === 'single' || questionType === 'multiple'
+
+  // 옵션 추가
+  const handleAddOption = () => {
+    const newOption: Option = {
+      id: generateTempOptionId(),
+      question_id: '',
+      content: '',
+      order_index: questionOptions.length,
+      allows_text_input: false,
+      created_at: new Date().toISOString(),
+    }
+    setQuestionOptions([...questionOptions, newOption])
+  }
+
+  // 옵션 삭제
+  const handleDeleteOption = (optionId: string) => {
+    setQuestionOptions(questionOptions.filter(opt => opt.id !== optionId))
+  }
+
+  // 옵션 내용 변경
+  const handleOptionChange = (optionId: string, content: string) => {
+    setQuestionOptions(questionOptions.map(opt =>
+      opt.id === optionId ? { ...opt, content } : opt
+    ))
+  }
 
   const handleOptionToggle = (optionId: string) => {
     setSelectedOptionIds((prev) =>
@@ -62,7 +94,7 @@ export function ConditionEditor({
       image_url: imageUrl || null,
       is_page_break: false,
       created_at: conditionalQuestion?.created_at ?? new Date().toISOString(),
-      options: [],
+      options: isChoiceType ? questionOptions : [],
     }
 
     onSave(newQuestion, selectedOptionIds)
@@ -154,6 +186,44 @@ export function ConditionEditor({
             required
           />
         </div>
+
+        {/* 선택형일 때 보기 편집 */}
+        {isChoiceType && (
+          <div>
+            <label className="block text-sm font-medium text-gray-900 mb-3">
+              보기 (선택지)
+            </label>
+            <div className="space-y-2">
+              {questionOptions.map((option, index) => (
+                <div key={option.id} className="flex items-center gap-2">
+                  <span className="text-sm text-gray-400 w-6">{index + 1}.</span>
+                  <input
+                    type="text"
+                    value={option.content}
+                    onChange={(e) => handleOptionChange(option.id, e.target.value)}
+                    className="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-gray-900 transition-colors text-sm"
+                    placeholder={`보기 ${index + 1}`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteOption(option.id)}
+                    className="p-2 text-gray-400 hover:text-red-500 transition-colors"
+                    title="삭제"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={handleAddOption}
+              className="mt-3 px-4 py-2 text-sm text-gray-600 border border-dashed border-gray-300 rounded-lg hover:border-gray-400 hover:text-gray-900 transition-colors w-full"
+            >
+              + 보기 추가
+            </button>
+          </div>
+        )}
 
         <div>
           <label

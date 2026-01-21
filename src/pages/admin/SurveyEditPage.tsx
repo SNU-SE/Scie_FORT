@@ -265,9 +265,10 @@ export default function SurveyEditPage() {
 
     try {
       let savedSurveyId = survey.id
-      console.log('[SurveyEditPage.handleSave] starting save', { isNew, surveyId: savedSurveyId })
+      const shouldCreateNew = isNew || !survey.id
+      console.log('[SurveyEditPage.handleSave] starting save', { isNew, surveyId: savedSurveyId, shouldCreateNew })
 
-      if (isNew) {
+      if (shouldCreateNew) {
         // 새 설문 생성
         console.log('[SurveyEditPage.handleSave] creating new survey...')
         const surveyData = {
