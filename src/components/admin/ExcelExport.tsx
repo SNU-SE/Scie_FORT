@@ -19,7 +19,7 @@ interface Response {
   id: string
   session_id: string
   question_id: string
-  option_id: string | null
+  selected_option_ids: string[] | null
   text_response: string | null
 }
 
@@ -102,16 +102,18 @@ export function ExcelExport({ surveyId, surveyTitle }: ExcelExportProps) {
 
         // Add responses
         questions.forEach((question) => {
-          const questionResponses = responses.filter(
+          const questionResponse = responses.find(
             (r) => r.session_id === session.id && r.question_id === question.id
           )
 
           if (question.type === 'text') {
-            row.push(questionResponses[0]?.text_response ?? '')
+            row.push(questionResponse?.text_response ?? '')
           } else {
-            const selectedOptions = questionResponses
-              .map((r) => {
-                const option = options.find((o) => o.id === r.option_id)
+            // selected_option_ids 배열에서 옵션 내용 가져오기
+            const selectedOptionIds = questionResponse?.selected_option_ids ?? []
+            const selectedOptions = selectedOptionIds
+              .map((optionId) => {
+                const option = options.find((o) => o.id === optionId)
                 return option?.content ?? ''
               })
               .filter(Boolean)
