@@ -132,7 +132,7 @@ export default function DashboardPage() {
   const handleLogout = async () => {
     console.log('[DashboardPage.handleLogout] called')
     await logout()
-    navigate('/admin/login')
+    navigate('/admin')
   }
 
   return (
