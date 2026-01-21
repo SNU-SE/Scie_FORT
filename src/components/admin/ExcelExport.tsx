@@ -23,6 +23,35 @@ interface Response {
   text_response: string | null
 }
 
+// 조건부 질문을 부모 질문 다음에 배치하는 함수
+function sortQuestionsWithConditional(questions: Question[]): Question[] {
+  const result: Question[] = []
+  const conditionalMap = new Map<string, Question[]>()
+
+  // 조건부 질문을 부모 ID별로 그룹화
+  questions.forEach((q) => {
+    if (q.parent_question_id) {
+      const existing = conditionalMap.get(q.parent_question_id) || []
+      existing.push(q)
+      conditionalMap.set(q.parent_question_id, existing)
+    }
+  })
+
+  // 일반 질문을 순회하면서 조건부 질문 삽입
+  questions
+    .filter((q) => !q.parent_question_id)
+    .sort((a, b) => a.order_index - b.order_index)
+    .forEach((q) => {
+      result.push(q)
+      const conditionals = conditionalMap.get(q.id) || []
+      conditionals
+        .sort((a, b) => a.order_index - b.order_index)
+        .forEach((cq) => result.push(cq))
+    })
+
+  return result
+}
+
 export function ExcelExport({ surveyId, surveyTitle }: ExcelExportProps) {
   const [isExporting, setIsExporting] = useState(false)
 
@@ -36,8 +65,7 @@ export function ExcelExport({ surveyId, surveyTitle }: ExcelExportProps) {
           .from('questions')
           .select('*')
           .eq('survey_id', surveyId)
-          .eq('is_page_break', false)
-          .order('order_index'),
+          .or('is_page_break.is.null,is_page_break.eq.false'),
         supabase
           .from('response_sessions')
           .select('*')
@@ -46,8 +74,11 @@ export function ExcelExport({ surveyId, surveyTitle }: ExcelExportProps) {
           .order('completed_at'),
       ])
 
-      const questions: Question[] = questionsRes.data ?? []
+      const rawQuestions: Question[] = questionsRes.data ?? []
       const sessions: ResponseSession[] = sessionsRes.data ?? []
+
+      // 조건부 질문을 부모 질문 다음에 배치
+      const questions = sortQuestionsWithConditional(rawQuestions)
 
       // Get options for all questions
       const questionIds = questions.map((q) => q.id)
@@ -76,12 +107,14 @@ export function ExcelExport({ surveyId, surveyTitle }: ExcelExportProps) {
       })
       const infoKeys = Array.from(respondentInfoKeys)
 
-      // Build headers
+      // Build headers (조건부 질문은 [조건부] 표시)
       const headers = [
         '#',
         ...infoKeys,
         '제출 시간',
-        ...questions.map((q) => q.content),
+        ...questions.map((q) =>
+          q.parent_question_id ? `[조건부] ${q.content}` : q.content
+        ),
       ]
 
       // Build rows
