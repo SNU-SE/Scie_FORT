@@ -69,23 +69,68 @@ export default function SurveyPage() {
     return [...survey.pages].sort((a, b) => a.page_index - b.page_index)
   }, [survey])
 
-  // Total number of pages
-  const totalPages = sortedPages.length
+  // Check if we have pages or should use flat question list
+  const hasPages = sortedPages.length > 0
+
+  // Get all root questions (without parent) sorted by page_index and order_index
+  const allRootQuestions = useMemo(() => {
+    if (!survey?.questions) return []
+    return survey.questions
+      .filter((q) => !q.parent_question_id)
+      .sort((a, b) => {
+        if (a.page_index !== b.page_index) {
+          return a.page_index - b.page_index
+        }
+        return a.order_index - b.order_index
+      })
+  }, [survey])
+
+  // Group questions by page_index when no explicit pages exist
+  const virtualPages = useMemo(() => {
+    if (hasPages) return []
+
+    const pageMap = new Map<number, typeof allRootQuestions>()
+    allRootQuestions.forEach(q => {
+      const pageIdx = q.page_index || 0
+      if (!pageMap.has(pageIdx)) {
+        pageMap.set(pageIdx, [])
+      }
+      pageMap.get(pageIdx)!.push(q)
+    })
+
+    return Array.from(pageMap.entries())
+      .sort((a, b) => a[0] - b[0])
+      .map(([pageIndex, questions]) => ({ pageIndex, questions }))
+  }, [hasPages, allRootQuestions])
+
+  // Total number of pages (use virtual pages if no explicit pages)
+  const totalPages = hasPages ? sortedPages.length : Math.max(virtualPages.length, 1)
 
   // Current page data
   const currentPageData = useMemo(() => {
-    return sortedPages[currentPage] || null
-  }, [sortedPages, currentPage])
+    if (hasPages) {
+      return sortedPages[currentPage] || null
+    }
+    return null // No explicit page data for virtual pages
+  }, [hasPages, sortedPages, currentPage])
 
   // Get questions for current page (excluding conditional questions)
   const currentPageQuestions = useMemo(() => {
-    if (!currentPageData?.questions) return []
+    if (hasPages) {
+      if (!currentPageData?.questions) return []
+      return currentPageData.questions
+        .filter((q) => !q.parent_question_id)
+        .sort((a, b) => a.order_index - b.order_index)
+    }
 
-    // Sort by order_index and filter out conditional questions (those with parent_question_id)
-    return currentPageData.questions
-      .filter((q) => !q.parent_question_id)
-      .sort((a, b) => a.order_index - b.order_index)
-  }, [currentPageData])
+    // Virtual pages mode: get questions for current page_index
+    const virtualPage = virtualPages[currentPage]
+    if (!virtualPage) {
+      // Fallback: show all questions on single page
+      return allRootQuestions
+    }
+    return virtualPage.questions
+  }, [hasPages, currentPageData, virtualPages, currentPage, allRootQuestions])
 
   // Get all questions (for mapping conditional questions)
   const allQuestions = useMemo(() => {
@@ -275,8 +320,8 @@ export default function SurveyPage() {
     )
   }
 
-  // No pages state
-  if (totalPages === 0) {
+  // No questions state
+  if (!survey?.questions || survey.questions.length === 0) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
         <Card className="w-full max-w-md" padding="lg">
