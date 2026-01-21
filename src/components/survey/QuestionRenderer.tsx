@@ -34,6 +34,9 @@ interface QuestionRendererProps {
   onResponseChange: (value: ResponseValue) => void
   conditionalQuestions?: Question[]
   questionNumber?: number
+  // 조건부 질문 응답 저장용
+  allResponses?: Record<string, ResponseValue>
+  onResponseChangeById?: (questionId: string, value: ResponseValue) => void
 }
 
 export default function QuestionRenderer({
@@ -43,6 +46,8 @@ export default function QuestionRenderer({
   onResponseChange,
   conditionalQuestions = [],
   questionNumber,
+  allResponses = {},
+  onResponseChangeById,
 }: QuestionRendererProps) {
   const selectedOptionIds = response.selectedOptionIds || []
   const textResponses = response.textResponses || {}
@@ -146,9 +151,16 @@ export default function QuestionRenderer({
     if (conditionalQuestions.length === 0) return null
 
     return conditionalQuestions.map((conditionalQ) => {
-      const conditionalOptions = options.filter(
-        (opt) => opt.question_id === conditionalQ.id
-      )
+      // 조건부 질문 자체의 옵션 사용
+      const conditionalOptions = conditionalQ.options || []
+
+      // 조건부 질문은 별도 ID로 응답 저장
+      const conditionalResponse = allResponses[conditionalQ.id] || {}
+      const handleConditionalChange = (value: ResponseValue) => {
+        if (onResponseChangeById) {
+          onResponseChangeById(conditionalQ.id, value)
+        }
+      }
 
       return (
         <ConditionalQuestion
@@ -159,8 +171,10 @@ export default function QuestionRenderer({
           <QuestionRenderer
             question={conditionalQ}
             options={conditionalOptions}
-            response={response}
-            onResponseChange={onResponseChange}
+            response={conditionalResponse}
+            onResponseChange={handleConditionalChange}
+            allResponses={allResponses}
+            onResponseChangeById={onResponseChangeById}
           />
         </ConditionalQuestion>
       )

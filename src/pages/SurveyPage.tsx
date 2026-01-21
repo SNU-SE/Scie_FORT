@@ -405,6 +405,8 @@ export default function SurveyPage() {
               }
               conditionalQuestions={getConditionalQuestions(question.id)}
               questionNumber={index + 1}
+              allResponses={responses}
+              onResponseChangeById={handleResponseChange}
             />
           ))}
         </div>
