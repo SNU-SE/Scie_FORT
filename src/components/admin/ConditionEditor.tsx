@@ -1,10 +1,18 @@
-import { useState, useEffect } from 'react'
-import type { Question, Option } from '@/types'
+import { useState, useEffect, useRef, useCallback } from 'react'
+import type { Question, Option, ImagePosition } from '@/types'
+import { supabase } from '@/lib/supabase'
 
 type QuestionType = 'single' | 'multiple' | 'text'
 
 // 임시 옵션 ID 생성
 const generateTempOptionId = () => `temp_opt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+
+const IMAGE_POSITIONS: { value: ImagePosition; label: string }[] = [
+  { value: 'left', label: '왼쪽' },
+  { value: 'right', label: '오른쪽' },
+  { value: 'top', label: '위' },
+  { value: 'bottom', label: '아래' },
+]
 
 interface ConditionEditorProps {
   parentQuestion: Question
@@ -25,18 +33,100 @@ export function ConditionEditor({
   const [questionType, setQuestionType] = useState<QuestionType>('single')
   const [questionText, setQuestionText] = useState('')
   const [imageUrl, setImageUrl] = useState('')
+  const [imagePosition, setImagePosition] = useState<ImagePosition>('left')
   const [required, setRequired] = useState(false)
   const [questionOptions, setQuestionOptions] = useState<Option[]>([])
+  const [isUploading, setIsUploading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (conditionalQuestion) {
       setQuestionType(conditionalQuestion.type as QuestionType)
       setQuestionText(conditionalQuestion.content)
-      setImageUrl('')
+      setImageUrl(conditionalQuestion.image_url || '')
+      setImagePosition(conditionalQuestion.image_position || 'left')
       setRequired(conditionalQuestion.is_required)
       setQuestionOptions(conditionalQuestion.options || [])
     }
   }, [conditionalQuestion])
+
+  // Upload image to Supabase Storage
+  const uploadImage = useCallback(async (file: File) => {
+    setIsUploading(true)
+    try {
+      const fileExt = file.name.split('.').pop() || 'png'
+      const fileName = `${crypto.randomUUID()}.${fileExt}`
+      const filePath = `question-images/${fileName}`
+
+      const { error: uploadError } = await supabase.storage
+        .from('survey-images')
+        .upload(filePath, file)
+
+      if (uploadError) throw uploadError
+
+      const { data: urlData } = supabase.storage
+        .from('survey-images')
+        .getPublicUrl(filePath)
+
+      setImageUrl(urlData.publicUrl)
+    } catch (error) {
+      console.error('Image upload failed:', error)
+      alert('이미지 업로드에 실패했습니다.')
+    } finally {
+      setIsUploading(false)
+    }
+  }, [])
+
+  // Handle file input change
+  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      uploadImage(file)
+    }
+  }, [uploadImage])
+
+  // Handle paste event for clipboard images
+  const handlePaste = useCallback((e: ClipboardEvent) => {
+    const items = e.clipboardData?.items
+    if (!items) return
+
+    for (const item of items) {
+      if (item.type.startsWith('image/')) {
+        e.preventDefault()
+        const file = item.getAsFile()
+        if (file) {
+          uploadImage(file)
+        }
+        break
+      }
+    }
+  }, [uploadImage])
+
+  // Handle drag and drop
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    const file = e.dataTransfer.files?.[0]
+    if (file && file.type.startsWith('image/')) {
+      uploadImage(file)
+    }
+  }, [uploadImage])
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+  }, [])
+
+  // Add paste listener
+  useEffect(() => {
+    document.addEventListener('paste', handlePaste)
+    return () => document.removeEventListener('paste', handlePaste)
+  }, [handlePaste])
+
+  // Remove image
+  const handleRemoveImage = useCallback(() => {
+    setImageUrl('')
+  }, [])
 
   const isChoiceType = questionType === 'single' || questionType === 'multiple'
 
@@ -92,7 +182,7 @@ export function ConditionEditor({
       parent_question_id: parentQuestion.id,
       trigger_option_ids: null,
       image_url: imageUrl || null,
-      image_position: 'left',
+      image_position: imagePosition,
       is_page_break: false,
       created_at: conditionalQuestion?.created_at ?? new Date().toISOString(),
       options: isChoiceType ? questionOptions : [],
@@ -102,7 +192,7 @@ export function ConditionEditor({
   }
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-6">
+    <div className="bg-white border border-gray-200 rounded-lg p-6 max-h-[80vh] overflow-y-auto">
       <div className="mb-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-2">
           조건부 질문 설정
@@ -227,20 +317,80 @@ export function ConditionEditor({
         )}
 
         <div>
-          <label
-            htmlFor="conditionImageUrl"
-            className="block text-sm font-medium text-gray-900 mb-2"
-          >
-            이미지 URL (선택)
+          <label className="block text-sm font-medium text-gray-900 mb-2">
+            이미지 (선택)
           </label>
           <input
-            type="url"
-            id="conditionImageUrl"
-            value={imageUrl}
-            onChange={(e) => setImageUrl(e.target.value)}
-            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:border-gray-900 transition-colors"
-            placeholder="https://example.com/image.jpg"
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleFileChange}
+            className="hidden"
           />
+
+          {!imageUrl ? (
+            <div
+              onDrop={handleDrop}
+              onDragOver={handleDragOver}
+              className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-gray-400 transition-colors cursor-pointer"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              {isUploading ? (
+                <div className="text-gray-500 text-sm">업로드 중...</div>
+              ) : (
+                <>
+                  <p className="text-sm text-gray-500">
+                    클릭 또는 드래그 앤 드롭
+                  </p>
+                  <p className="text-xs text-gray-400 mt-1">
+                    Ctrl+V로 붙여넣기 가능
+                  </p>
+                </>
+              )}
+            </div>
+          ) : (
+            <div className="relative inline-block">
+              <img
+                src={imageUrl}
+                alt="미리보기"
+                className="h-[100px] w-auto object-contain border border-gray-200 rounded-lg"
+              />
+              <button
+                type="button"
+                onClick={handleRemoveImage}
+                className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          )}
+
+          {/* 이미지 위치 선택 */}
+          {imageUrl && (
+            <div className="mt-3">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                이미지 위치
+              </label>
+              <div className="flex gap-2">
+                {IMAGE_POSITIONS.map((pos) => (
+                  <button
+                    key={pos.value}
+                    type="button"
+                    onClick={() => setImagePosition(pos.value)}
+                    className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                      imagePosition === pos.value
+                        ? 'bg-gray-900 text-white'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    {pos.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="flex items-center justify-between py-4 border-t border-b border-gray-200">

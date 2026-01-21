@@ -161,7 +161,7 @@ export function QuestionEditor({
   }
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-6">
+    <div className="bg-white border border-gray-200 rounded-lg p-6 max-h-[80vh] overflow-y-auto">
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
           <label className="block text-sm font-medium text-gray-900 mb-3">
@@ -252,7 +252,7 @@ export function QuestionEditor({
               <img
                 src={imageUrl}
                 alt="미리보기"
-                className="max-w-full max-h-48 object-contain border border-gray-200 rounded-lg"
+                className="h-[100px] w-auto object-contain border border-gray-200 rounded-lg"
               />
               <button
                 type="button"
