@@ -1,21 +1,18 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useEffect, useCallback } from 'react'
 import { User, AuthError } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
-import type { AuthUser, AuthState } from '@/types'
+import { useAuthStore } from '@/stores/authStore'
+import type { AuthUser } from '@/types'
 
 /**
  * Supabase Auth 연동 Hook
  * - login, logout, getCurrentUser
- * - 인증 상태 관리
+ * - 인증 상태 관리 (Zustand 전역 상태 사용)
  */
 export function useAuth() {
   console.log('[useAuth] hook initialized')
 
-  const [state, setState] = useState<AuthState>({
-    user: null,
-    isLoading: true,
-    isAuthenticated: false,
-  })
+  const { user, isLoading, isAuthenticated, setUser, setLoading } = useAuthStore()
 
   /**
    * Supabase User를 AuthUser로 변환
@@ -59,7 +56,7 @@ export function useAuth() {
   ): Promise<{ user: AuthUser | null; error: AuthError | null }> => {
     console.log('[useAuth.login] called', { email })
     try {
-      setState(prev => ({ ...prev, isLoading: true }))
+      setLoading(true)
 
       console.log('[useAuth.login] API request', { email })
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -70,25 +67,21 @@ export function useAuth() {
 
       if (error) {
         console.error('[useAuth.login] error', error)
-        setState(prev => ({ ...prev, isLoading: false }))
+        setLoading(false)
         return { user: null, error }
       }
 
       const authUser = toAuthUser(data.user)
-      setState({
-        user: authUser,
-        isLoading: false,
-        isAuthenticated: !!authUser,
-      })
+      setUser(authUser)
 
       console.log('[useAuth.login] success', { authUser })
       return { user: authUser, error: null }
     } catch (error) {
       console.error('[useAuth.login] catch error', error)
-      setState(prev => ({ ...prev, isLoading: false }))
+      setLoading(false)
       return { user: null, error: error as AuthError }
     }
-  }, [])
+  }, [setUser, setLoading])
 
   /**
    * 로그아웃
@@ -96,7 +89,7 @@ export function useAuth() {
   const logout = useCallback(async (): Promise<{ error: AuthError | null }> => {
     console.log('[useAuth.logout] called')
     try {
-      setState(prev => ({ ...prev, isLoading: true }))
+      setLoading(true)
 
       console.log('[useAuth.logout] API request')
       const { error } = await supabase.auth.signOut()
@@ -104,24 +97,20 @@ export function useAuth() {
 
       if (error) {
         console.error('[useAuth.logout] error', error)
-        setState(prev => ({ ...prev, isLoading: false }))
+        setLoading(false)
         return { error }
       }
 
-      setState({
-        user: null,
-        isLoading: false,
-        isAuthenticated: false,
-      })
+      setUser(null)
 
       console.log('[useAuth.logout] success')
       return { error: null }
     } catch (error) {
       console.error('[useAuth.logout] catch error', error)
-      setState(prev => ({ ...prev, isLoading: false }))
+      setLoading(false)
       return { error: error as AuthError }
     }
-  }, [])
+  }, [setUser, setLoading])
 
   /**
    * 회원가입
@@ -132,7 +121,7 @@ export function useAuth() {
   ): Promise<{ user: AuthUser | null; error: AuthError | null }> => {
     console.log('[useAuth.signUp] called', { email })
     try {
-      setState(prev => ({ ...prev, isLoading: true }))
+      setLoading(true)
 
       console.log('[useAuth.signUp] API request', { email })
       const { data, error } = await supabase.auth.signUp({
@@ -143,25 +132,21 @@ export function useAuth() {
 
       if (error) {
         console.error('[useAuth.signUp] error', error)
-        setState(prev => ({ ...prev, isLoading: false }))
+        setLoading(false)
         return { user: null, error }
       }
 
       const authUser = toAuthUser(data.user)
-      setState({
-        user: authUser,
-        isLoading: false,
-        isAuthenticated: !!authUser,
-      })
+      setUser(authUser)
 
       console.log('[useAuth.signUp] success', { authUser })
       return { user: authUser, error: null }
     } catch (error) {
       console.error('[useAuth.signUp] catch error', error)
-      setState(prev => ({ ...prev, isLoading: false }))
+      setLoading(false)
       return { user: null, error: error as AuthError }
     }
-  }, [])
+  }, [setUser, setLoading])
 
   /**
    * 비밀번호 재설정 이메일 발송
@@ -224,21 +209,13 @@ export function useAuth() {
       }
 
       const authUser = toAuthUser(session?.user ?? null)
-      setState({
-        user: authUser,
-        isLoading: false,
-        isAuthenticated: !!authUser,
-      })
+      setUser(authUser)
       console.log('[useAuth.refreshSession] success', { authUser })
     } catch (error) {
       console.error('[useAuth.refreshSession] catch error', error)
-      setState({
-        user: null,
-        isLoading: false,
-        isAuthenticated: false,
-      })
+      setUser(null)
     }
-  }, [])
+  }, [setUser])
 
   // 초기 세션 로드 및 인증 상태 변경 구독
   useEffect(() => {
@@ -250,19 +227,11 @@ export function useAuth() {
         const { data: { session } } = await supabase.auth.getSession()
         console.log('[useAuth.initializeAuth] API response', { session })
         const authUser = toAuthUser(session?.user ?? null)
-        setState({
-          user: authUser,
-          isLoading: false,
-          isAuthenticated: !!authUser,
-        })
+        setUser(authUser)
         console.log('[useAuth.initializeAuth] success', { authUser })
       } catch (error) {
         console.error('[useAuth.initializeAuth] catch error', error)
-        setState({
-          user: null,
-          isLoading: false,
-          isAuthenticated: false,
-        })
+        setUser(null)
       }
     }
 
@@ -274,11 +243,7 @@ export function useAuth() {
       async (event, session) => {
         console.log('[useAuth.onAuthStateChange] event', { event, session })
         const authUser = toAuthUser(session?.user ?? null)
-        setState({
-          user: authUser,
-          isLoading: false,
-          isAuthenticated: !!authUser,
-        })
+        setUser(authUser)
       }
     )
 
@@ -286,13 +251,13 @@ export function useAuth() {
       console.log('[useAuth] unsubscribing from auth state changes')
       subscription.unsubscribe()
     }
-  }, [])
+  }, [setUser])
 
   return {
-    // State
-    user: state.user,
-    isLoading: state.isLoading,
-    isAuthenticated: state.isAuthenticated,
+    // State (from Zustand store)
+    user,
+    isLoading,
+    isAuthenticated,
 
     // Actions
     login,
