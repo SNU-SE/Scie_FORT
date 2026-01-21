@@ -21,6 +21,7 @@ interface SurveyEditState {
   isConditionEditorOpen: boolean
   conditionParentQuestion: Question | null
   conditionParentOptions: Option[]
+  editingConditionalQuestion: Question | null
 
   // Actions
   setSurvey: (survey: Partial<Survey>) => void
@@ -33,7 +34,7 @@ interface SurveyEditState {
   selectQuestion: (id: string | null) => void
   openQuestionEditor: () => void
   closeQuestionEditor: () => void
-  openConditionEditor: (parentQuestion: Question, parentOptions: Option[]) => void
+  openConditionEditor: (parentQuestion: Question, parentOptions: Option[], conditionalQuestion?: Question) => void
   closeConditionEditor: () => void
 
   resetStore: () => void
@@ -51,6 +52,7 @@ const initialState = {
   isConditionEditorOpen: false,
   conditionParentQuestion: null,
   conditionParentOptions: [],
+  editingConditionalQuestion: null,
 }
 
 // --------------------------------------------
@@ -83,7 +85,23 @@ export const useSurveyStore = create<SurveyEditState>()(
         console.log('[surveyStore.addQuestion] called', { question })
         set(
           (state) => {
-            const newQuestions = [...state.questions, question]
+            // order_index 위치에 삽입
+            const insertIndex = question.order_index
+            const newQuestions = [...state.questions]
+
+            // 삽입 위치 이후의 질문들의 order_index 증가
+            newQuestions.forEach((q) => {
+              if (q.order_index >= insertIndex && !q.parent_question_id) {
+                q.order_index += 1
+              }
+            })
+
+            // 새 질문 삽입
+            newQuestions.push(question)
+
+            // order_index로 정렬
+            newQuestions.sort((a, b) => a.order_index - b.order_index)
+
             console.log('[surveyStore.addQuestion] state updated', { questions: newQuestions })
             return { questions: newQuestions }
           },
@@ -161,19 +179,21 @@ export const useSurveyStore = create<SurveyEditState>()(
         )
       },
 
-      openConditionEditor: (parentQuestion, parentOptions) => {
-        console.log('[surveyStore.openConditionEditor] called', { parentQuestion, parentOptions })
+      openConditionEditor: (parentQuestion, parentOptions, conditionalQuestion) => {
+        console.log('[surveyStore.openConditionEditor] called', { parentQuestion, parentOptions, conditionalQuestion })
         set(
           () => {
             console.log('[surveyStore.openConditionEditor] state updated', {
               isConditionEditorOpen: true,
               conditionParentQuestion: parentQuestion,
               conditionParentOptions: parentOptions,
+              editingConditionalQuestion: conditionalQuestion || null,
             })
             return {
               isConditionEditorOpen: true,
               conditionParentQuestion: parentQuestion,
               conditionParentOptions: parentOptions,
+              editingConditionalQuestion: conditionalQuestion || null,
             }
           },
           false,
@@ -189,11 +209,13 @@ export const useSurveyStore = create<SurveyEditState>()(
               isConditionEditorOpen: false,
               conditionParentQuestion: null,
               conditionParentOptions: [],
+              editingConditionalQuestion: null,
             })
             return {
               isConditionEditorOpen: false,
               conditionParentQuestion: null,
               conditionParentOptions: [],
+              editingConditionalQuestion: null,
             }
           },
           false,

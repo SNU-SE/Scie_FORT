@@ -47,6 +47,8 @@ export function ConditionEditor({
       setImagePosition(conditionalQuestion.image_position || 'left')
       setRequired(conditionalQuestion.is_required)
       setQuestionOptions(conditionalQuestion.options || [])
+      // 기존 트리거 옵션 설정
+      setSelectedOptionIds(conditionalQuestion.trigger_option_ids || [])
     }
   }, [conditionalQuestion])
 

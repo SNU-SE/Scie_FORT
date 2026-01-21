@@ -45,6 +45,7 @@ export default function SurveyEditPage() {
     isConditionEditorOpen,
     conditionParentQuestion,
     conditionParentOptions,
+    editingConditionalQuestion,
     setSurvey,
     setQuestions,
     addQuestion,
@@ -221,6 +222,25 @@ export default function SurveyEditPage() {
       console.log('[SurveyEditPage] state changed', { questionDeleted: questionId })
     }
   }, [removeQuestion])
+
+  // 조건부 질문 편집 (기존 조건 수정)
+  const handleEditCondition = useCallback((conditionalQuestion: Question) => {
+    console.log('[SurveyEditPage.handleEditCondition] called', { conditionalQuestion })
+
+    // 부모 질문 찾기
+    const parentQuestion = questions.find(q => q.id === conditionalQuestion.parent_question_id)
+    if (!parentQuestion) {
+      console.error('[SurveyEditPage.handleEditCondition] parent question not found')
+      return
+    }
+
+    // 부모 질문의 옵션 가져오기
+    const parentOptions = parentQuestion.options || []
+
+    // ConditionEditor 열기 (기존 조건부 질문 포함)
+    openConditionEditor(parentQuestion, parentOptions, conditionalQuestion)
+    console.log('[SurveyEditPage] state changed', { isConditionEditorOpen: true, editingConditionalQuestion: conditionalQuestion })
+  }, [questions, openConditionEditor])
 
   // 조건 저장
   const handleSaveCondition = useCallback((question: Question, triggerOptionIds: string[]) => {
@@ -641,6 +661,7 @@ export default function SurveyEditPage() {
                 onDelete={handleDeleteQuestion}
                 onReorder={reorderQuestions}
                 onAddPageBreak={handleAddPageBreak}
+                onEditCondition={handleEditCondition}
               />
 
               {/* 문항 추가 버튼들 */}
@@ -689,12 +710,13 @@ export default function SurveyEditPage() {
       <Modal
         isOpen={isConditionEditorOpen}
         onClose={closeConditionEditor}
-        title="조건 설정"
+        title={editingConditionalQuestion ? '조건부 질문 수정' : '조건 설정'}
       >
         {conditionParentQuestion && (
           <ConditionEditor
             parentQuestion={conditionParentQuestion}
             parentOptions={conditionParentOptions}
+            conditionalQuestion={editingConditionalQuestion || undefined}
             onSave={handleSaveCondition}
             onCancel={closeConditionEditor}
           />

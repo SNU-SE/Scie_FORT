@@ -7,6 +7,7 @@ interface QuestionListProps {
   onEdit: (id: string) => void
   onDelete: (id: string) => void
   onAddPageBreak: (afterIndex: number) => void
+  onEditCondition?: (conditionalQuestion: Question) => void
 }
 
 export function QuestionList({
@@ -15,6 +16,7 @@ export function QuestionList({
   onEdit,
   onDelete,
   onAddPageBreak,
+  onEditCondition,
 }: QuestionListProps) {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null)
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
@@ -224,6 +226,29 @@ export function QuestionList({
                   />
                 </svg>
               </button>
+              {/* 조건부 질문일 경우 조건 수정 버튼 */}
+              {isConditional && onEditCondition && (
+                <button
+                  onClick={() => onEditCondition(question)}
+                  className="p-2 text-gray-400 hover:text-blue-600 transition-colors"
+                  title="조건 수정"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="w-4 h-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                </button>
+              )}
               <button
                 onClick={() => onAddPageBreak(index)}
                 className="p-2 text-gray-400 hover:text-gray-900 transition-colors"
