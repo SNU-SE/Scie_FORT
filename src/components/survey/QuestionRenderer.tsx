@@ -37,6 +37,9 @@ interface QuestionRendererProps {
   // 조건부 질문 응답 저장용
   allResponses?: Record<string, ResponseValue>
   onResponseChangeById?: (questionId: string, value: ResponseValue) => void
+  // 유효성 검사 에러 표시용
+  hasError?: boolean
+  errorQuestionIds?: string[]
 }
 
 export default function QuestionRenderer({
@@ -48,6 +51,8 @@ export default function QuestionRenderer({
   questionNumber,
   allResponses = {},
   onResponseChangeById,
+  hasError = false,
+  errorQuestionIds = [],
 }: QuestionRendererProps) {
   const selectedOptionIds = response.selectedOptionIds || []
   const textResponses = response.textResponses || {}
@@ -175,6 +180,8 @@ export default function QuestionRenderer({
             onResponseChange={handleConditionalChange}
             allResponses={allResponses}
             onResponseChangeById={onResponseChangeById}
+            hasError={errorQuestionIds.includes(conditionalQ.id)}
+            errorQuestionIds={errorQuestionIds}
           />
         </ConditionalQuestion>
       )
@@ -187,10 +194,10 @@ export default function QuestionRenderer({
   const isHorizontalLayout = hasImage && (imagePosition === 'left' || imagePosition === 'right')
   const isVerticalLayout = hasImage && (imagePosition === 'top' || imagePosition === 'bottom')
 
-  // Question header
+  // Question header - red text if has error
   const questionHeader = (
     <div className="mb-4">
-      <h3 className="text-lg font-medium text-black">
+      <h3 className={`text-lg font-medium ${hasError ? 'text-red-600' : 'text-black'}`}>
         {questionNumber !== undefined && (
           <span className="mr-2">{questionNumber}.</span>
         )}

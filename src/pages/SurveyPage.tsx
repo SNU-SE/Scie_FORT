@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useCallback } from 'react'
+import { useEffect, useMemo, useCallback, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { SurveyLayout, LoadingSpinner, Card, Button } from '@/components/common'
 import { QuestionRenderer, ProgressBar, PageNavigator } from '@/components/survey'
@@ -30,6 +30,9 @@ export default function SurveyPage() {
 
   // Submit mutation
   const submitMutation = useSubmitSurveyResponse()
+
+  // Validation error state - stores question IDs with missing required responses
+  const [validationErrors, setValidationErrors] = useState<string[]>([])
 
   // Mounted effect
   useEffect(() => {
@@ -177,31 +180,45 @@ export default function SurveyPage() {
     [setResponse, responses]
   )
 
-  // Validate current page responses
-  const validateCurrentPage = useCallback((): boolean => {
-    if (!currentPageQuestions) return true
+  // Get validation errors - returns array of question IDs with missing required responses
+  const getValidationErrors = useCallback((): string[] => {
+    if (!currentPageQuestions) return []
+
+    const errors: string[] = []
 
     for (const question of currentPageQuestions) {
       if (question.is_required) {
         const response = responses[question.id]
 
-        if (!response) return false
-
-        // Check based on question type
-        if (question.type === 'single' || question.type === 'multiple') {
+        let hasError = false
+        if (!response) {
+          hasError = true
+        } else if (question.type === 'single' || question.type === 'multiple') {
           if (
             !response.selectedOptionIds ||
             response.selectedOptionIds.length === 0
           ) {
-            return false
+            hasError = true
           }
         } else if (question.type === 'text') {
-          if (
-            !response.textResponses?.main ||
-            response.textResponses.main.trim() === ''
-          ) {
-            return false
+          // Check for inline inputs or main text
+          const textResponses = response.textResponses || {}
+          const hasInlineInputs = question.content?.includes('{{input:')
+
+          if (hasInlineInputs) {
+            // For inline inputs, check if any input has value
+            const hasAnyValue = Object.values(textResponses).some(v => v && v.trim() !== '')
+            if (!hasAnyValue) hasError = true
+          } else {
+            // For regular text input
+            if (!textResponses.main || textResponses.main.trim() === '') {
+              hasError = true
+            }
           }
+        }
+
+        if (hasError) {
+          errors.push(question.id)
         }
       }
 
@@ -219,30 +236,41 @@ export default function SurveyPage() {
 
           if (isTriggered) {
             const condResponse = responses[condQ.id]
-            if (!condResponse) return false
+            let hasError = false
 
-            if (condQ.type === 'single' || condQ.type === 'multiple') {
+            if (!condResponse) {
+              hasError = true
+            } else if (condQ.type === 'single' || condQ.type === 'multiple') {
               if (
                 !condResponse.selectedOptionIds ||
                 condResponse.selectedOptionIds.length === 0
               ) {
-                return false
+                hasError = true
               }
             } else if (condQ.type === 'text') {
               if (
                 !condResponse.textResponses?.main ||
                 condResponse.textResponses.main.trim() === ''
               ) {
-                return false
+                hasError = true
               }
+            }
+
+            if (hasError) {
+              errors.push(condQ.id)
             }
           }
         }
       }
     }
 
-    return true
+    return errors
   }, [currentPageQuestions, responses, getConditionalQuestions])
+
+  // Validate current page responses
+  const validateCurrentPage = useCallback((): boolean => {
+    return getValidationErrors().length === 0
+  }, [getValidationErrors])
 
   // Navigation handlers
   const handlePrevious = useCallback(() => {
@@ -255,16 +283,31 @@ export default function SurveyPage() {
 
   const handleNext = useCallback(() => {
     console.log('[SurveyPage.handleNext] called', { currentPage })
-    if (validateCurrentPage() && currentPage < totalPages - 1) {
+    const errors = getValidationErrors()
+    if (errors.length > 0) {
+      setValidationErrors(errors)
+      // Scroll to top to show error message
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+      return
+    }
+    setValidationErrors([])
+    if (currentPage < totalPages - 1) {
       setCurrentPage(currentPage + 1)
       console.log('[SurveyPage] state changed', { currentPage: currentPage + 1 })
     }
-  }, [currentPage, totalPages, setCurrentPage, validateCurrentPage])
+  }, [currentPage, totalPages, setCurrentPage, getValidationErrors])
 
   // Submit handler
   const handleSubmit = useCallback(async () => {
     console.log('[SurveyPage.handleSubmit] called', { responses, respondentInfo })
-    if (!validateCurrentPage() || !survey) return
+    const errors = getValidationErrors()
+    if (errors.length > 0) {
+      setValidationErrors(errors)
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+      return
+    }
+    setValidationErrors([])
+    if (!survey) return
 
     // Build response payload
     const questionResponses: QuestionResponse[] = Object.entries(responses).map(
@@ -297,7 +340,7 @@ export default function SurveyPage() {
       // Could show an error toast here
     }
   }, [
-    validateCurrentPage,
+    getValidationErrors,
     survey,
     responses,
     code,
@@ -380,6 +423,13 @@ export default function SurveyPage() {
       showNavigation={false}
     >
       <div className="h-full flex flex-col">
+        {/* Validation Error Banner */}
+        {validationErrors.length > 0 && (
+          <div className="mb-4 p-3 bg-red-500 text-white text-sm font-medium rounded-lg">
+            필수 응답이 제출되지 않았습니다.
+          </div>
+        )}
+
         {/* Page Title */}
         {currentPageData?.title && (
           <h2 className="text-xl font-bold text-gray-900 mb-6">
@@ -407,6 +457,8 @@ export default function SurveyPage() {
               questionNumber={index + 1}
               allResponses={responses}
               onResponseChangeById={handleResponseChange}
+              hasError={validationErrors.includes(question.id)}
+              errorQuestionIds={validationErrors}
             />
           ))}
         </div>
