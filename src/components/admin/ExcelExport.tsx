@@ -104,9 +104,10 @@ export function ExcelExport({ surveyId, surveyTitle }: ExcelExportProps) {
       const conditionalQuestions = questions.filter(q => q.parent_question_id)
       console.log('[ExcelExport] 조건부 질문들:', conditionalQuestions.map(q => ({ id: q.id, content: q.content, type: q.type })))
       console.log('[ExcelExport] 전체 응답 수:', responses.length)
+      console.log('[ExcelExport] 응답의 모든 question_id들:', [...new Set(responses.map(r => r.question_id))])
       conditionalQuestions.forEach(cq => {
         const cqResponses = responses.filter(r => r.question_id === cq.id)
-        console.log(`[ExcelExport] 조건부 질문 "${cq.content}" 응답:`, cqResponses)
+        console.log(`[ExcelExport] 조건부 질문 ID="${cq.id}", "${cq.content}" 응답:`, cqResponses)
       })
 
       // Get respondent info keys
