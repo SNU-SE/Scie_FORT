@@ -13,6 +13,7 @@ type ParsedContent = {
   type: 'text' | 'input'
   content: string
   inputId?: string
+  placeholder?: string
 }
 
 export default function InlineTextInput({
@@ -23,7 +24,8 @@ export default function InlineTextInput({
   const parsedContent = useMemo(() => {
     const content = question.content || ''
     const parts: ParsedContent[] = []
-    const regex = /\{\{input:(\d+)\}\}/g
+    // {{input:1}} 또는 {{input:1[placeholder텍스트]}} 형식 지원
+    const regex = /\{\{input:(\d+)(?:\[([^\]]*)\])?\}\}/g
     let lastIndex = 0
     let match
 
@@ -39,6 +41,7 @@ export default function InlineTextInput({
         type: 'input',
         content: '',
         inputId: match[1],
+        placeholder: match[2] || '', // 대괄호 안의 텍스트
       })
 
       lastIndex = match.index + match[0].length
@@ -73,6 +76,7 @@ export default function InlineTextInput({
         }
 
         const inputId = part.inputId!
+        const placeholderText = part.placeholder || ''
         return (
           <input
             key={index}
@@ -81,15 +85,16 @@ export default function InlineTextInput({
             onChange={(e) => handleInputChange(inputId, e.target.value)}
             className="
               inline-block
-              w-32 mx-1 px-2 py-1
-              border-b-2 border-gray-300
+              min-w-24 mx-1 px-3 py-1
+              border border-gray-300 rounded
               text-base text-black text-center
-              bg-transparent
+              bg-white
               transition-all duration-200
-              focus:outline-none focus:border-black
+              focus:outline-none focus:border-black focus:ring-1 focus:ring-black
               placeholder-gray-400
             "
-            placeholder="___"
+            placeholder={placeholderText}
+            style={{ width: placeholderText ? `${Math.max(placeholderText.length * 12 + 24, 96)}px` : '96px' }}
           />
         )
       })}
