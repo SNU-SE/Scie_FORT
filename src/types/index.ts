@@ -278,7 +278,7 @@ export interface Database {
 /**
  * Option with full data
  */
-export interface Option extends OptionRow {}
+export type Option = OptionRow
 
 /**
  * Question with options

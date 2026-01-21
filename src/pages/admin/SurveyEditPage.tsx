@@ -265,19 +265,24 @@ export default function SurveyEditPage() {
 
     try {
       let savedSurveyId = survey.id
+      console.log('[SurveyEditPage.handleSave] starting save', { isNew, surveyId: savedSurveyId })
 
       if (isNew) {
         // 새 설문 생성
-        const createdSurvey = await createSurveyMutation.mutateAsync({
-          title: survey.title,
+        console.log('[SurveyEditPage.handleSave] creating new survey...')
+        const surveyData = {
+          title: survey.title!,
           description: survey.description || null,
           user_id: user.id,
           is_active: survey.is_active || false,
           collect_respondent_info: survey.collect_respondent_info || false,
           respondent_fields: survey.respondent_fields || null,
-        })
+        }
+        console.log('[SurveyEditPage.handleSave] survey data to create', surveyData)
+
+        const createdSurvey = await createSurveyMutation.mutateAsync(surveyData)
         savedSurveyId = createdSurvey.id
-        console.log('[SurveyEditPage] data loaded', { createdSurvey })
+        console.log('[SurveyEditPage.handleSave] survey created', { createdSurvey })
 
         // URL 변경 (새 설문 -> 실제 ID)
         console.log('[SurveyEditPage] navigating to', `/admin/survey/${savedSurveyId}`)

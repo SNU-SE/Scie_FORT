@@ -67,7 +67,7 @@ export default function SurveyPage() {
   const sortedPages = useMemo(() => {
     if (!survey?.pages) return []
     return [...survey.pages].sort((a, b) => a.page_index - b.page_index)
-  }, [survey?.pages])
+  }, [survey])
 
   // Total number of pages
   const totalPages = sortedPages.length
@@ -91,7 +91,7 @@ export default function SurveyPage() {
   const allQuestions = useMemo(() => {
     if (!survey?.questions) return []
     return survey.questions
-  }, [survey?.questions])
+  }, [survey])
 
   // Get conditional questions for a parent question
   const getConditionalQuestions = useCallback(

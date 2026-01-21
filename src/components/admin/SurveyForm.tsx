@@ -124,14 +124,6 @@ export function SurveyForm({ survey, onSave, onChange }: SurveyFormProps) {
         </button>
       </div>
 
-      <div className="pt-4">
-        <button
-          type="submit"
-          className="w-full py-3 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-600 transition-colors"
-        >
-          {survey ? '설문 저장' : '설문 생성'}
-        </button>
-      </div>
     </form>
   )
 }
