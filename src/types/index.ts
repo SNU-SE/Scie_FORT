@@ -82,6 +82,7 @@ export interface OptionRow {
   question_id: string
   order_index: number
   content: string
+  allows_text_input: boolean  // 이 옵션 선택 시 추가 텍스트 입력 허용 (기타 입력용)
   created_at: string
 }
 
@@ -148,6 +149,7 @@ export interface OptionInsert {
   question_id: string
   order_index: number
   content: string
+  allows_text_input?: boolean
 }
 
 export interface ResponseSessionInsert {
@@ -206,6 +208,7 @@ export interface QuestionUpdate {
 export interface OptionUpdate {
   order_index?: number
   content?: string
+  allows_text_input?: boolean
 }
 
 export interface ResponseSessionUpdate {

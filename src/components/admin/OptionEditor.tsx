@@ -22,9 +22,17 @@ export function OptionEditor({
       question_id: options[0]?.question_id ?? '',
       content: '',
       order_index: options.length + 1,
+      allows_text_input: false,
       created_at: new Date().toISOString(),
     }
     onChange([...options, newOption])
+  }
+
+  const handleToggleTextInput = (index: number) => {
+    const updated = options.map((opt, i) =>
+      i === index ? { ...opt, allows_text_input: !opt.allows_text_input } : opt
+    )
+    onChange(updated)
   }
 
   const handleDeleteOption = (index: number) => {
@@ -148,6 +156,23 @@ export function OptionEditor({
               className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded focus:outline-none focus:border-gray-900 transition-colors"
               placeholder="선택지 내용을 입력하세요"
             />
+
+            <label
+              className={`flex items-center gap-1 px-2 py-1 text-xs rounded cursor-pointer transition-colors whitespace-nowrap ${
+                option.allows_text_input
+                  ? 'bg-blue-100 text-blue-700 border border-blue-300'
+                  : 'bg-gray-100 text-gray-500 border border-gray-200 hover:border-gray-400'
+              }`}
+              title="선택 시 추가 텍스트 입력 허용 (예: 기타)"
+            >
+              <input
+                type="checkbox"
+                checked={option.allows_text_input || false}
+                onChange={() => handleToggleTextInput(index)}
+                className="w-3 h-3 accent-blue-600"
+              />
+              기타입력
+            </label>
 
             <button
               type="button"

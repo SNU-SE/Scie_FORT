@@ -52,6 +52,7 @@ export default function SurveyEditPage() {
     openQuestionEditor,
     closeQuestionEditor,
     closeConditionEditor,
+    openConditionEditor,
     resetStore,
   } = useSurveyStore()
 
@@ -175,12 +176,27 @@ export default function SurveyEditPage() {
   }, [selectQuestion, openQuestionEditor])
 
   // 문항 저장 (에디터에서)
-  const handleSaveQuestion = useCallback((updatedQuestion: Question) => {
-    console.log('[SurveyEditPage.handleSaveQuestion] called', { updatedQuestion })
-    updateQuestion(updatedQuestion.id, updatedQuestion)
+  const handleSaveQuestion = useCallback((updatedQuestion: Question, options: import('@/types').Option[]) => {
+    console.log('[SurveyEditPage.handleSaveQuestion] called', { updatedQuestion, options })
+    // options를 question에 포함시켜 저장
+    const questionWithOptions = { ...updatedQuestion, options }
+    updateQuestion(updatedQuestion.id, questionWithOptions)
     closeQuestionEditor()
     console.log('[SurveyEditPage] state changed', { questionSaved: true, isQuestionEditorOpen: false })
   }, [updateQuestion, closeQuestionEditor])
+
+  // 조건 추가 핸들러 (문항 편집 중 선택지에서 호출)
+  const handleAddCondition = useCallback((optionId: string) => {
+    console.log('[SurveyEditPage.handleAddCondition] called', { optionId })
+    if (!selectedQuestion) return
+
+    // 현재 문항의 options에서 해당 option 찾기
+    const parentOptions = selectedQuestion.options || []
+
+    // 조건 편집기 열기
+    openConditionEditor(selectedQuestion, parentOptions)
+    console.log('[SurveyEditPage] state changed', { isConditionEditorOpen: true })
+  }, [selectedQuestion, openConditionEditor])
 
   // 문항 삭제
   const handleDeleteQuestion = useCallback((questionId: string) => {
@@ -194,10 +210,26 @@ export default function SurveyEditPage() {
   // 조건 저장
   const handleSaveCondition = useCallback((question: Question, triggerOptionIds: string[]) => {
     console.log('[SurveyEditPage.handleSaveCondition] called', { questionId: question.id, triggerOptionIds })
-    updateQuestion(question.id, { trigger_option_ids: triggerOptionIds })
+
+    // 조건부 문항에 trigger_option_ids 설정
+    const conditionalQuestion = {
+      ...question,
+      trigger_option_ids: triggerOptionIds,
+    }
+
+    // 기존 문항인지 새 문항인지 확인
+    const existingQuestion = questions.find((q) => q.id === question.id)
+    if (existingQuestion) {
+      // 기존 문항 업데이트
+      updateQuestion(question.id, conditionalQuestion)
+    } else {
+      // 새 조건부 문항 추가
+      addQuestion(conditionalQuestion)
+    }
+
     closeConditionEditor()
     console.log('[SurveyEditPage] state changed', { conditionSaved: true, isConditionEditorOpen: false })
-  }, [updateQuestion, closeConditionEditor])
+  }, [questions, updateQuestion, addQuestion, closeConditionEditor])
 
   // 설문 저장
   const handleSave = async () => {
@@ -430,8 +462,10 @@ export default function SurveyEditPage() {
         {selectedQuestion && (
           <QuestionEditor
             question={selectedQuestion}
+            options={selectedQuestion.options || []}
             onSave={handleSaveQuestion}
             onCancel={closeQuestionEditor}
+            onAddCondition={handleAddCondition}
           />
         )}
       </Modal>
@@ -442,9 +476,8 @@ export default function SurveyEditPage() {
         onClose={closeConditionEditor}
         title="조건 설정"
       >
-        {conditionParentQuestion && selectedQuestion && (
+        {conditionParentQuestion && (
           <ConditionEditor
-            conditionalQuestion={selectedQuestion}
             parentQuestion={conditionParentQuestion}
             parentOptions={conditionParentOptions}
             onSave={handleSaveCondition}

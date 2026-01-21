@@ -63,6 +63,16 @@ export default function QuestionRenderer({
     })
   }
 
+  const handleOptionTextChange = (optionId: string, text: string) => {
+    onResponseChange({
+      ...response,
+      textResponses: {
+        ...textResponses,
+        [optionId]: text,
+      },
+    })
+  }
+
   const renderQuestionContent = () => {
     switch (question.type) {
       case 'single':
@@ -72,6 +82,8 @@ export default function QuestionRenderer({
             options={options}
             value={selectedOptionIds[0] || null}
             onChange={handleSingleChoiceChange}
+            textResponses={textResponses}
+            onTextChange={handleOptionTextChange}
           />
         )
 
@@ -82,6 +94,8 @@ export default function QuestionRenderer({
             options={options}
             value={selectedOptionIds}
             onChange={handleMultipleChoiceChange}
+            textResponses={textResponses}
+            onTextChange={handleOptionTextChange}
           />
         )
 

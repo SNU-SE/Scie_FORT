@@ -9,6 +9,7 @@ interface QuestionEditorProps {
   options?: Option[]
   onSave: (question: Question, options: Option[]) => void
   onCancel: () => void
+  onAddCondition?: (optionId: string) => void
 }
 
 export function QuestionEditor({
@@ -16,6 +17,7 @@ export function QuestionEditor({
   options = [],
   onSave,
   onCancel,
+  onAddCondition,
 }: QuestionEditorProps) {
   const [questionType, setQuestionType] = useState<QuestionType>('single')
   const [questionText, setQuestionText] = useState('')
@@ -59,9 +61,11 @@ export function QuestionEditor({
     onSave(updatedQuestion, isChoiceType ? currentOptions : [])
   }
 
-  const handleAddCondition = (optionId: string) => {
-    // This will be handled by parent component
-    console.log('Add condition for option:', optionId)
+  const handleAddConditionInternal = (optionId: string) => {
+    console.log('[QuestionEditor] handleAddCondition called', { optionId })
+    if (onAddCondition) {
+      onAddCondition(optionId)
+    }
   }
 
   return (
@@ -168,7 +172,7 @@ export function QuestionEditor({
             <OptionEditor
               options={currentOptions}
               onChange={setCurrentOptions}
-              onAddCondition={handleAddCondition}
+              onAddCondition={handleAddConditionInternal}
             />
           </div>
         )}
