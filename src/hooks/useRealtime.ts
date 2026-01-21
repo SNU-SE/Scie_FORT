@@ -45,18 +45,9 @@ export function useRealtimeResponses(
   const [isSubscribed, setIsSubscribed] = useState(false)
   const [error, setError] = useState<Error | null>(null)
 
-  const handleChange = useCallback(
-    (payload: RealtimePostgresChangesPayload<ResponseRow>) => {
-      console.log('[useRealtimeResponses.handleChange] received', { eventType: payload.eventType, payload })
-      const realtimePayload: RealtimeResponsePayload = {
-        eventType: payload.eventType as RealtimeEvent,
-        new: payload.new as ResponseRow,
-        old: (payload.old as ResponseRow) || null,
-      }
-      onNewResponse?.(realtimePayload)
-    },
-    [onNewResponse]
-  )
+  // 콜백을 ref로 저장하여 의존성에서 제거
+  const onNewResponseRef = useRef(onNewResponse)
+  onNewResponseRef.current = onNewResponse
 
   useEffect(() => {
     if (!surveyId || !enabled) {
@@ -71,6 +62,17 @@ export function useRealtimeResponses(
     if (channelRef.current) {
       console.log('[useRealtimeResponses] removing existing channel')
       supabase.removeChannel(channelRef.current)
+    }
+
+    // 핸들러 함수
+    const handleChange = (payload: RealtimePostgresChangesPayload<ResponseRow>) => {
+      console.log('[useRealtimeResponses.handleChange] received', { eventType: payload.eventType, payload })
+      const realtimePayload: RealtimeResponsePayload = {
+        eventType: payload.eventType as RealtimeEvent,
+        new: payload.new as ResponseRow,
+        old: (payload.old as ResponseRow) || null,
+      }
+      onNewResponseRef.current?.(realtimePayload)
     }
 
     // 새 채널 생성 및 구독
@@ -115,7 +117,7 @@ export function useRealtimeResponses(
         setIsSubscribed(false)
       }
     }
-  }, [surveyId, enabled, handleChange])
+  }, [surveyId, enabled])
 
   const unsubscribe = useCallback(() => {
     console.log('[useRealtimeResponses.unsubscribe] called')
@@ -147,25 +149,9 @@ export function useRealtimeSessions(
   const [isSubscribed, setIsSubscribed] = useState(false)
   const [error, setError] = useState<Error | null>(null)
 
-  const handleChange = useCallback(
-    (payload: RealtimePostgresChangesPayload<ResponseSessionRow>) => {
-      console.log('[useRealtimeSessions.handleChange] received', { eventType: payload.eventType, payload })
-      // survey_id 필터링
-      const newSession = payload.new as ResponseSessionRow
-      if (newSession && newSession.survey_id !== surveyId) {
-        console.log('[useRealtimeSessions.handleChange] filtered out - different survey_id', { newSession_surveyId: newSession.survey_id, surveyId })
-        return
-      }
-
-      const realtimePayload: RealtimeSessionPayload = {
-        eventType: payload.eventType as RealtimeEvent,
-        new: newSession,
-        old: (payload.old as ResponseSessionRow) || null,
-      }
-      onSessionChange?.(realtimePayload)
-    },
-    [surveyId, onSessionChange]
-  )
+  // 콜백을 ref로 저장하여 의존성에서 제거
+  const onSessionChangeRef = useRef(onSessionChange)
+  onSessionChangeRef.current = onSessionChange
 
   useEffect(() => {
     if (!surveyId || !enabled) {
@@ -179,6 +165,24 @@ export function useRealtimeSessions(
     if (channelRef.current) {
       console.log('[useRealtimeSessions] removing existing channel')
       supabase.removeChannel(channelRef.current)
+    }
+
+    // 핸들러 함수
+    const handleChange = (payload: RealtimePostgresChangesPayload<ResponseSessionRow>) => {
+      console.log('[useRealtimeSessions.handleChange] received', { eventType: payload.eventType, payload })
+      // survey_id 필터링
+      const newSession = payload.new as ResponseSessionRow
+      if (newSession && newSession.survey_id !== surveyId) {
+        console.log('[useRealtimeSessions.handleChange] filtered out - different survey_id', { newSession_surveyId: newSession.survey_id, surveyId })
+        return
+      }
+
+      const realtimePayload: RealtimeSessionPayload = {
+        eventType: payload.eventType as RealtimeEvent,
+        new: newSession,
+        old: (payload.old as ResponseSessionRow) || null,
+      }
+      onSessionChangeRef.current?.(realtimePayload)
     }
 
     console.log('[useRealtimeSessions] creating new channel')
@@ -221,7 +225,7 @@ export function useRealtimeSessions(
         setIsSubscribed(false)
       }
     }
-  }, [surveyId, enabled, handleChange])
+  }, [surveyId, enabled])
 
   const unsubscribe = useCallback(() => {
     console.log('[useRealtimeSessions.unsubscribe] called')
