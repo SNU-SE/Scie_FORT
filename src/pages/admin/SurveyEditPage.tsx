@@ -150,6 +150,7 @@ export default function SurveyEditPage() {
       created_at: new Date().toISOString(),
       options: [],
       image_url: null,
+      image_position: 'left',
       is_page_break: false,
     }
     addQuestion(newQuestion)
@@ -174,6 +175,7 @@ export default function SurveyEditPage() {
       created_at: new Date().toISOString(),
       options: [],
       image_url: null,
+      image_position: 'left',
       is_page_break: true,
     }
     addQuestion(newQuestion)
@@ -349,6 +351,8 @@ export default function SurveyEditPage() {
                 type: question.type,
                 content: question.content,
                 is_required: question.is_required,
+                image_url: question.image_url,
+                image_position: question.image_position,
                 parent_question_id: null,
                 trigger_option_ids: null,
               },
@@ -386,6 +390,8 @@ export default function SurveyEditPage() {
                 type: question.type,
                 content: question.content,
                 is_required: question.is_required,
+                image_url: question.image_url,
+                image_position: question.image_position,
                 parent_question_id: null,
                 trigger_option_ids: null,
               },
@@ -437,6 +443,8 @@ export default function SurveyEditPage() {
                 type: question.type,
                 content: question.content,
                 is_required: question.is_required,
+                image_url: question.image_url,
+                image_position: question.image_position,
                 parent_question_id: realParentId || null,
                 trigger_option_ids: realTriggerOptionIds,
               },
@@ -453,6 +461,8 @@ export default function SurveyEditPage() {
                 type: question.type,
                 content: question.content,
                 is_required: question.is_required,
+                image_url: question.image_url,
+                image_position: question.image_position,
                 parent_question_id: realParentId || null,
                 trigger_option_ids: realTriggerOptionIds,
               },

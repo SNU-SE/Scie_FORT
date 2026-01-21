@@ -8,6 +8,8 @@
 
 export type QuestionType = 'single' | 'multiple' | 'text' | 'single_choice' | 'multiple_choice' | 'inline_text'
 
+export type ImagePosition = 'left' | 'right' | 'top' | 'bottom'
+
 // --------------------------------------------
 // Respondent Info Types
 // --------------------------------------------
@@ -71,6 +73,7 @@ export interface QuestionRow {
   content: string
   is_required: boolean
   image_url: string | null
+  image_position: ImagePosition
   is_page_break: boolean
   parent_question_id: string | null
   trigger_option_ids: string[] | null
@@ -140,6 +143,7 @@ export interface QuestionInsert {
   content: string
   is_required?: boolean
   image_url?: string | null
+  image_position?: ImagePosition
   is_page_break?: boolean
   parent_question_id?: string | null
   trigger_option_ids?: string[] | null
@@ -200,6 +204,7 @@ export interface QuestionUpdate {
   content?: string
   is_required?: boolean
   image_url?: string | null
+  image_position?: ImagePosition
   is_page_break?: boolean
   parent_question_id?: string | null
   trigger_option_ids?: string[] | null

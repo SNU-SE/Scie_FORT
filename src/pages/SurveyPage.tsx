@@ -73,10 +73,11 @@ export default function SurveyPage() {
   const hasPages = sortedPages.length > 0
 
   // Get all root questions (without parent) sorted by page_index and order_index
+  // Exclude page break markers
   const allRootQuestions = useMemo(() => {
     if (!survey?.questions) return []
     return survey.questions
-      .filter((q) => !q.parent_question_id)
+      .filter((q) => !q.parent_question_id && q.content !== '__PAGE_BREAK__' && !q.is_page_break)
       .sort((a, b) => {
         if (a.page_index !== b.page_index) {
           return a.page_index - b.page_index
@@ -114,12 +115,12 @@ export default function SurveyPage() {
     return null // No explicit page data for virtual pages
   }, [hasPages, sortedPages, currentPage])
 
-  // Get questions for current page (excluding conditional questions)
+  // Get questions for current page (excluding conditional questions and page breaks)
   const currentPageQuestions = useMemo(() => {
     if (hasPages) {
       if (!currentPageData?.questions) return []
       return currentPageData.questions
-        .filter((q) => !q.parent_question_id)
+        .filter((q) => !q.parent_question_id && q.content !== '__PAGE_BREAK__' && !q.is_page_break)
         .sort((a, b) => a.order_index - b.order_index)
     }
 

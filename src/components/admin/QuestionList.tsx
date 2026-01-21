@@ -105,7 +105,7 @@ export function QuestionList({
     <div className="space-y-2">
       {questions.map((question, index) => {
         const isConditional = !!question.parent_question_id
-        const isPageBreak = false // Page breaks are handled separately in the new schema
+        const isPageBreak = question.content === '__PAGE_BREAK__' || question.is_page_break === true
 
         if (isPageBreak) {
           return (

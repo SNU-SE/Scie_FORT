@@ -92,6 +92,7 @@ export function ConditionEditor({
       parent_question_id: parentQuestion.id,
       trigger_option_ids: null,
       image_url: imageUrl || null,
+      image_position: 'left',
       is_page_break: false,
       created_at: conditionalQuestion?.created_at ?? new Date().toISOString(),
       options: isChoiceType ? questionOptions : [],

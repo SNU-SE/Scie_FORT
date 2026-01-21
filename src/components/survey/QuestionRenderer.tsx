@@ -1,6 +1,6 @@
 'use client'
 
-import type { Question, Option } from '@/types'
+import type { Question, Option, ImagePosition } from '@/types'
 import SingleChoice from './SingleChoice'
 import MultipleChoice from './MultipleChoice'
 import TextInput from './TextInput'
@@ -10,6 +10,21 @@ import ConditionalQuestion from './ConditionalQuestion'
 export type ResponseValue = {
   selectedOptionIds?: string[]
   textResponses?: Record<string, string>
+}
+
+// Image component for question
+function QuestionImage({ src, position }: { src: string; position: ImagePosition }) {
+  const isHorizontal = position === 'left' || position === 'right'
+
+  return (
+    <div className={`flex-shrink-0 ${isHorizontal ? 'w-1/2' : 'w-full'}`}>
+      <img
+        src={src}
+        alt="문항 이미지"
+        className="w-full h-auto object-contain rounded-lg"
+      />
+    </div>
+  )
 }
 
 interface QuestionRendererProps {
@@ -152,24 +167,72 @@ export default function QuestionRenderer({
     })
   }
 
+  const imageUrl = question.image_url
+  const imagePosition = question.image_position || 'left'
+  const hasImage = !!imageUrl
+  const isHorizontalLayout = hasImage && (imagePosition === 'left' || imagePosition === 'right')
+  const isVerticalLayout = hasImage && (imagePosition === 'top' || imagePosition === 'bottom')
+
+  // Question header
+  const questionHeader = (
+    <div className="mb-4">
+      <h3 className="text-lg font-medium text-black">
+        {questionNumber !== undefined && (
+          <span className="mr-2">{questionNumber}.</span>
+        )}
+        {!(question.type === 'text' && question.content?.includes('{{input:')) && question.content}
+        {question.is_required && (
+          <span className="text-red-500 ml-1">*</span>
+        )}
+      </h3>
+    </div>
+  )
+
+  // Question content (options/input)
+  const questionContent = (
+    <div className="pl-0">
+      {renderQuestionContent()}
+      {renderConditionalQuestions()}
+    </div>
+  )
+
+  // Render with image layout
+  if (isHorizontalLayout) {
+    return (
+      <div className="mb-8">
+        {questionHeader}
+        <div className={`flex gap-6 ${imagePosition === 'right' ? 'flex-row-reverse' : ''}`}>
+          <QuestionImage src={imageUrl!} position={imagePosition} />
+          <div className="w-1/2">{questionContent}</div>
+        </div>
+      </div>
+    )
+  }
+
+  if (isVerticalLayout) {
+    return (
+      <div className="mb-8">
+        {questionHeader}
+        {imagePosition === 'top' && (
+          <div className="mb-4">
+            <QuestionImage src={imageUrl!} position={imagePosition} />
+          </div>
+        )}
+        {questionContent}
+        {imagePosition === 'bottom' && (
+          <div className="mt-4">
+            <QuestionImage src={imageUrl!} position={imagePosition} />
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  // Default: no image
   return (
     <div className="mb-8">
-      <div className="mb-4">
-        <h3 className="text-lg font-medium text-black">
-          {questionNumber !== undefined && (
-            <span className="mr-2">{questionNumber}.</span>
-          )}
-          {!(question.type === 'text' && question.content?.includes('{{input:')) && question.content}
-          {question.is_required && (
-            <span className="text-red-500 ml-1">*</span>
-          )}
-        </h3>
-      </div>
-
-      <div className="pl-0">
-        {renderQuestionContent()}
-        {renderConditionalQuestions()}
-      </div>
+      {questionHeader}
+      {questionContent}
     </div>
   )
 }
