@@ -91,7 +91,7 @@ export default function AISurveyEditPage() {
         system_prompt: '너는 학생들에게 과학 문제를 출제하고 친근하게 설명해주는 AI 선생님이야. 학생이 답을 틀리면 힌트를 주고, 맞추면 칭찬해줘.',
         allow_hint: true,
         max_hints_per_question: 3,
-        is_active: false,
+        is_active: true,
         user_id: user.id,
       })
       setQuestions([])

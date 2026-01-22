@@ -19,7 +19,7 @@ export function SurveyForm({ survey, onSave, onChange }: SurveyFormProps) {
     title: '',
     description: '',
     collect_respondent_info: true,
-    is_active: false,
+    is_active: true,
   })
 
   useEffect(() => {
@@ -28,7 +28,7 @@ export function SurveyForm({ survey, onSave, onChange }: SurveyFormProps) {
         title: survey.title ?? '',
         description: survey.description ?? '',
         collect_respondent_info: survey.collect_respondent_info ?? true,
-        is_active: survey.is_active ?? false,
+        is_active: survey.is_active ?? true,
       })
     }
   }, [survey])
@@ -81,28 +81,6 @@ export function SurveyForm({ survey, onSave, onChange }: SurveyFormProps) {
       </div>
 
       <div className="flex items-center justify-between py-4 border-t border-b border-gray-200">
-        <div>
-          <p className="text-sm font-medium text-gray-900">인적정보 수집</p>
-          <p className="text-xs text-gray-400 mt-1">
-            응답자의 인적정보(학번, 이름 등)를 수집합니다.
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={() => handleChange('collect_respondent_info', !formData.collect_respondent_info)}
-          className={`relative w-12 h-6 rounded-full transition-colors ${
-            formData.collect_respondent_info ? 'bg-gray-900' : 'bg-gray-200'
-          }`}
-        >
-          <span
-            className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${
-              formData.collect_respondent_info ? 'translate-x-6' : ''
-            }`}
-          />
-        </button>
-      </div>
-
-      <div className="flex items-center justify-between py-4 border-b border-gray-200">
         <div>
           <p className="text-sm font-medium text-gray-900">설문 활성화</p>
           <p className="text-xs text-gray-400 mt-1">

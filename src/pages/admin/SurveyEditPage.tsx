@@ -87,7 +87,7 @@ export default function SurveyEditPage() {
       setSurvey({
         title: '',
         description: '',
-        is_active: false,
+        is_active: true,
         collect_respondent_info: false,
         respondent_fields: [],
       })
@@ -117,7 +117,7 @@ export default function SurveyEditPage() {
     const baseSurvey = survey || {
       title: '',
       description: '',
-      is_active: false,
+      is_active: true,
       collect_respondent_info: false,
       respondent_fields: [],
     }

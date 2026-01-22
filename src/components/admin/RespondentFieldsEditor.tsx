@@ -9,7 +9,6 @@ interface RespondentFieldsEditorProps {
 const PRESET_FIELDS: RespondentField[] = [
   { key: 'student_id', label: '학번', required: true },
   { key: 'name', label: '이름', required: true },
-  { key: 'grade_class', label: '학년/반', required: false },
 ]
 
 export function RespondentFieldsEditor({
