@@ -313,6 +313,15 @@ export default function SurveyEditPage() {
         savedSurveyId = createdSurvey.id
         console.log('[SurveyEditPage.handleSave] survey created', { createdSurvey })
 
+        // 자동으로 접속 코드 생성
+        const randomCode = Math.random().toString(36).substring(2, 8).toUpperCase()
+        await createAccessCodeMutation.mutateAsync({
+          survey_id: savedSurveyId,
+          code: randomCode,
+          is_active: true,
+        })
+        console.log('[SurveyEditPage.handleSave] access code created', { code: randomCode })
+
         // URL 변경 (새 설문 -> 실제 ID)
         console.log('[SurveyEditPage] navigating to', `/admin/survey/${savedSurveyId}`)
         navigate(`/admin/survey/${savedSurveyId}`, { replace: true })
@@ -347,8 +356,6 @@ export default function SurveyEditPage() {
         })
 
         for (const question of regularQuestions) {
-          const isPageBreak = question.content === '__PAGE_BREAK__'
-
           if (question.id.startsWith('temp_')) {
             // 새 문항 생성 (옵션 포함)
             const questionOptions = question.options?.map((opt, idx) => ({
@@ -399,8 +406,8 @@ export default function SurveyEditPage() {
                 }
               })
             }
-          } else if (!isPageBreak) {
-            // 기존 문항 업데이트
+          } else {
+            // 기존 문항 업데이트 (페이지 나눔 포함)
             await updateQuestionMutation.mutateAsync({
               id: question.id,
               surveyId: savedSurveyId,

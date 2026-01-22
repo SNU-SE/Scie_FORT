@@ -117,6 +117,15 @@ export default function AISurveyEditPage() {
           user_id: user.id,
           title: survey.title || '새 AI 설문',
         } as any)
+
+        // 자동으로 접속 코드 생성
+        const randomCode = Math.random().toString(36).substring(2, 8).toUpperCase()
+        await createAccessCodeMutation.mutateAsync({
+          survey_id: newSurvey.id,
+          code: randomCode,
+          is_active: true,
+        })
+
         navigate(`/admin/ai/survey/${newSurvey.id}`, { replace: true })
       } else {
         await updateSurveyMutation.mutateAsync({
