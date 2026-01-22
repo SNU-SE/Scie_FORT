@@ -15,6 +15,7 @@ type ParsedContent = {
   inputId?: string
   group?: string | null  // 그룹명 (null이면 그룹 없음)
   placeholder?: string
+  width?: number | null  // 커스텀 너비 (픽셀)
 }
 
 export default function InlineTextInput({
@@ -25,9 +26,10 @@ export default function InlineTextInput({
   const parsedContent = useMemo(() => {
     const content = question.content || ''
     const parts: ParsedContent[] = []
-    // {{input:1}}, {{input:1[placeholder]}}, {{g1:input:1}}, {{g1:input:1[placeholder]}} 형식 지원
-    // 캡처 그룹: 1=그룹명(선택), 2=입력ID, 3=placeholder(선택)
-    const regex = /\{\{(?:([a-zA-Z0-9]+):)?input:(\d+)(?:\[([^\]]*)\])?\}\}/g
+    // {{input:1}}, {{input:1[placeholder]}}, {{input:1[placeholder:200]}},
+    // {{g1:input:1}}, {{g1:input:1[placeholder]}}, {{g1:input:1[placeholder:200]}} 형식 지원
+    // 캡처 그룹: 1=그룹명(선택), 2=입력ID, 3=placeholder(선택), 4=너비(선택)
+    const regex = /\{\{(?:([a-zA-Z0-9]+):)?input:(\d+)(?:\[([^\]:]*)(?::(\d+))?\])?\}\}/g
     let lastIndex = 0
     let match
 
@@ -44,7 +46,8 @@ export default function InlineTextInput({
         content: '',
         group: match[1] || null,  // 그룹명 (없으면 null)
         inputId: match[2],
-        placeholder: match[3] || '', // 대괄호 안의 텍스트
+        placeholder: match[3] || '', // 대괄호 안의 텍스트 (콜론 앞부분)
+        width: match[4] ? parseInt(match[4], 10) : null, // 커스텀 너비 (콜론 뒷부분)
       })
 
       lastIndex = match.index + match[0].length
@@ -102,6 +105,13 @@ export default function InlineTextInput({
         const placeholderText = part.placeholder || ''
         const disabled = isInputDisabled(part)
 
+        // 너비 결정: 커스텀 너비 > placeholder 기반 계산 > 기본값
+        const inputWidth = part.width
+          ? `${part.width}px`
+          : placeholderText
+            ? `${Math.max(placeholderText.length * 12 + 24, 96)}px`
+            : '96px'
+
         return (
           <input
             key={index}
@@ -122,7 +132,7 @@ export default function InlineTextInput({
               placeholder-gray-400
             `}
             placeholder={placeholderText}
-            style={{ width: placeholderText ? `${Math.max(placeholderText.length * 12 + 24, 96)}px` : '96px' }}
+            style={{ width: inputWidth }}
           />
         )
       })}
