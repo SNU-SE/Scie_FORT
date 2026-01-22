@@ -125,8 +125,9 @@ export default function QuestionRenderer({
         )
 
       case 'text':
-        // Check if content has inline input placeholders
-        if (question.content && question.content.includes('{{input:')) {
+        // Check if content has inline input placeholders (regular or grouped)
+        // Matches both {{input:N}} and {{g1:input:N}} patterns
+        if (question.content && /\{\{(?:[a-zA-Z0-9]+:)?input:\d+/.test(question.content)) {
           return (
             <InlineTextInput
               question={question}
