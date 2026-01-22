@@ -2,7 +2,7 @@
 // AI Survey Platform - AI Responses Page
 // ============================================
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, useParams, Link } from 'react-router-dom'
 import { Button, LoadingSpinner, Modal, Card } from '@/components/common'
 import {
@@ -16,7 +16,14 @@ import { AIExcelExport } from '@/components/ai/admin/AIExcelExport'
 export default function AIResponsesPage() {
   const navigate = useNavigate()
   const { id } = useParams<{ id: string }>()
-  const { logout } = useAuth()
+  const { user, isLoading: authLoading, logout } = useAuth()
+
+  // 인증 체크: 로그인하지 않은 경우 로그인 페이지로 리다이렉트
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate('/admin')
+    }
+  }, [user, authLoading, navigate])
 
   // Queries
   const { data: survey, isLoading: surveyLoading, error: surveyError } = useAISurveyDetail(id)
@@ -52,6 +59,19 @@ export default function AIResponsesPage() {
       default:
         return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-600">{status}</span>
     }
+  }
+
+  // 인증 로딩 중이거나 인증되지 않은 경우
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <LoadingSpinner />
+      </div>
+    )
+  }
+
+  if (!user) {
+    return null
   }
 
   if (surveyLoading) {

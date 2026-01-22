@@ -2,7 +2,7 @@
 // AI Survey Platform - AI Dashboard Page
 // ============================================
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { Button, Modal, LoadingSpinner } from '@/components/common'
 import { useAISurveys, useDeleteAISurvey, useCreateAISurvey, useAuth } from '@/hooks'
@@ -10,7 +10,14 @@ import type { AISurveyRow } from '@/types/ai'
 
 export default function AIDashboardPage() {
   const navigate = useNavigate()
-  const { user, logout } = useAuth()
+  const { user, isLoading: authLoading, logout } = useAuth()
+
+  // 인증 체크: 로그인하지 않은 경우 로그인 페이지로 리다이렉트
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate('/admin')
+    }
+  }, [user, authLoading, navigate])
 
   // 설문 목록 조회
   const { data: surveys, isLoading, error, refetch } = useAISurveys(user?.id)
@@ -94,7 +101,21 @@ export default function AIDashboardPage() {
   // 로그아웃 핸들러
   const handleLogout = async () => {
     await logout()
-    navigate('/admin/ai')
+    navigate('/admin')
+  }
+
+  // 인증 로딩 중이면 로딩 스피너 표시
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <LoadingSpinner />
+      </div>
+    )
+  }
+
+  // 인증되지 않은 경우 (리다이렉트 전까지)
+  if (!user) {
+    return null
   }
 
   // 날짜 포맷팅

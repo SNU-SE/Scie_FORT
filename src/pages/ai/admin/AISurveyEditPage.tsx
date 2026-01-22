@@ -34,7 +34,14 @@ export default function AISurveyEditPage() {
   const navigate = useNavigate()
   const { id } = useParams<{ id: string }>()
   const isNew = !id || id === 'new'
-  const { user, logout } = useAuth()
+  const { user, isLoading: authLoading, logout } = useAuth()
+
+  // 인증 체크: 로그인하지 않은 경우 로그인 페이지로 리다이렉트
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate('/admin')
+    }
+  }, [user, authLoading, navigate])
 
   // Store
   const {
@@ -301,7 +308,20 @@ export default function AISurveyEditPage() {
 
   const handleLogout = async () => {
     await logout()
-    navigate('/admin/ai')
+    navigate('/admin')
+  }
+
+  // 인증 로딩 중이거나 인증되지 않은 경우
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <LoadingSpinner />
+      </div>
+    )
+  }
+
+  if (!user) {
+    return null
   }
 
   if (isLoading) {
