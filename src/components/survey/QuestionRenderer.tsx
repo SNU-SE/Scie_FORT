@@ -195,14 +195,18 @@ export default function QuestionRenderer({
   const isHorizontalLayout = hasImage && (imagePosition === 'left' || imagePosition === 'right')
   const isVerticalLayout = hasImage && (imagePosition === 'top' || imagePosition === 'bottom')
 
+  // Check if question has inline inputs (regular or grouped)
+  const hasInlineInputs = question.content && /\{\{(?:[a-zA-Z0-9]+:)?input:\d+/.test(question.content)
+
   // Question header - red text if has error
+  // For text questions with inline inputs, don't show content in header (it's shown in InlineTextInput)
   const questionHeader = (
     <div className="mb-4">
       <h3 className={`text-lg font-medium ${hasError ? 'text-red-600' : 'text-black'}`}>
         {questionNumber !== undefined && (
           <span className="mr-2">{questionNumber}.</span>
         )}
-        {!(question.type === 'text' && question.content?.includes('{{input:')) && question.content}
+        {!(question.type === 'text' && hasInlineInputs) && question.content}
         {question.is_required && (
           <span className="text-red-500 ml-1">*</span>
         )}

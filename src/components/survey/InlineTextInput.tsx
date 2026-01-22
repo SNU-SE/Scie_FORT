@@ -63,24 +63,30 @@ export default function InlineTextInput({
     return parts
   }, [question.content])
 
-  // 활성화된 그룹 결정: 값이 입력된 그룹 입력 중 첫 번째 그룹
-  const activeGroup = useMemo(() => {
+  // 각 그룹별로 활성화된 입력 ID 결정 (값이 입력된 첫 번째 입력)
+  const activeInputByGroup = useMemo(() => {
+    const result: Record<string, string> = {} // group -> inputId with value
     for (const part of parsedContent) {
       if (part.type === 'input' && part.group && part.inputId) {
         const inputValue = value[part.inputId]
         if (inputValue && inputValue.trim()) {
-          return part.group
+          // 이 그룹에 아직 활성 입력이 없으면 설정
+          if (!result[part.group]) {
+            result[part.group] = part.inputId
+          }
         }
       }
     }
-    return null
+    return result
   }, [parsedContent, value])
 
   // 특정 입력이 비활성화되어야 하는지 확인
+  // 같은 그룹 내에서 다른 입력이 값을 가지면 이 입력은 비활성화
   const isInputDisabled = (part: ParsedContent): boolean => {
     if (!part.group) return false  // 그룹 없으면 항상 활성
-    if (!activeGroup) return false  // 활성 그룹 없으면 모두 활성
-    return part.group !== activeGroup  // 다른 그룹이면 비활성
+    const activeInputId = activeInputByGroup[part.group]
+    if (!activeInputId) return false  // 이 그룹에 활성 입력 없으면 모두 활성
+    return part.inputId !== activeInputId  // 활성 입력이 아니면 비활성
   }
 
   const handleInputChange = (inputId: string, inputValue: string) => {
