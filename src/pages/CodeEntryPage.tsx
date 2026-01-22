@@ -141,7 +141,7 @@ export default function CodeEntryPage() {
           </div>
 
           <h1 className="text-2xl font-bold text-gray-900 mb-2">
-            SciForm
+            과학 수업 통합 플랫폼
           </h1>
 
           {/* Description */}
