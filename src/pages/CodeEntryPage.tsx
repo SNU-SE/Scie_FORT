@@ -1,101 +1,152 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button, Input, Card } from '@/components/common'
-import { useSurveyByCode } from '@/hooks'
+import { supabase } from '@/lib/supabase'
 import { useResponseStore } from '@/stores/responseStore'
+import { useChatStore } from '@/stores/chatStore'
 
 // ============================================
-// CodeEntryPage - Survey Access Code Entry
+// CodeEntryPage - Unified Access Code Entry
+// 코드 자동 판별: 일반 설문 / AI 챗봇
 // ============================================
+
+type CodeType = 'normal' | 'ai' | null
+
+interface CodeCheckResult {
+  type: CodeType
+  surveyId: string | null
+}
+
+// 코드 타입 판별 함수
+async function checkCodeType(code: string): Promise<CodeCheckResult> {
+  // 1. 먼저 일반 설문 access_codes 테이블 검색
+  const { data: normalCode, error: normalError } = await supabase
+    .from('access_codes')
+    .select('survey_id, is_active, expires_at')
+    .eq('code', code)
+    .eq('is_active', true)
+    .single()
+
+  if (normalCode && !normalError) {
+    // 만료 확인
+    if (normalCode.expires_at && new Date(normalCode.expires_at) < new Date()) {
+      // 만료된 코드 - AI 코드도 확인
+    } else {
+      return { type: 'normal', surveyId: normalCode.survey_id }
+    }
+  }
+
+  // 2. AI 설문 ai_access_codes 테이블 검색
+  const { data: aiCode, error: aiError } = await supabase
+    .from('ai_access_codes')
+    .select('survey_id, is_active, expires_at')
+    .eq('code', code)
+    .eq('is_active', true)
+    .single()
+
+  if (aiCode && !aiError) {
+    // 만료 확인
+    if (aiCode.expires_at && new Date(aiCode.expires_at) < new Date()) {
+      return { type: null, surveyId: null }
+    }
+    return { type: 'ai', surveyId: aiCode.survey_id }
+  }
+
+  // 3. 둘 다 없으면 null
+  return { type: null, surveyId: null }
+}
 
 export default function CodeEntryPage() {
   const navigate = useNavigate()
   const [code, setCode] = useState('')
-  const [submittedCode, setSubmittedCode] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [isValidating, setIsValidating] = useState(false)
 
-  const { setSurveyCode, resetStore } = useResponseStore()
+  // 일반 설문 스토어
+  const { setSurveyCode, resetStore: resetResponseStore } = useResponseStore()
 
-  // Query for survey by code (enabled only when submittedCode is set)
-  const { data, isLoading, isFetching, isError } = useSurveyByCode(
-    submittedCode ?? undefined
-  )
-
-  // Mounted effect
-  useEffect(() => {
-    console.log('[CodeEntryPage] mounted')
-  }, [])
-
-  // Handle query result
-  useEffect(() => {
-    if (!submittedCode) return
-
-    // Still loading
-    if (isFetching) return
-
-    console.log('[CodeEntryPage] query result', { data, isError, submittedCode })
-
-    if (data) {
-      // Success - reset store and navigate
-      resetStore()
-      setSurveyCode(submittedCode)
-      console.log('[CodeEntryPage] navigating to', `/info/${submittedCode}`)
-      navigate(`/info/${submittedCode}`)
-    } else if (!isFetching) {
-      // Query completed but no data found
-      setError('유효하지 않은 코드입니다. 다시 확인해주세요.')
-      setSubmittedCode(null)
-      console.log('[CodeEntryPage] invalid code, reset submittedCode')
-    }
-  }, [data, isFetching, isError, submittedCode, navigate, resetStore, setSurveyCode])
+  // AI 챗봇 스토어
+  const { resetStore: resetChatStore } = useChatStore()
 
   // Handle code input change
   const handleCodeChange = (value: string) => {
-    console.log('[CodeEntryPage.handleCodeChange] called', { value })
-    // Convert to uppercase and limit to 6 characters
     const formattedCode = value.toUpperCase().slice(0, 6)
     setCode(formattedCode)
-    console.log('[CodeEntryPage] state changed', { code: formattedCode })
     setError(null)
   }
 
   // Handle form submission
-  const handleSubmit = () => {
-    console.log('[CodeEntryPage.handleSubmit] called', { code })
+  const handleSubmit = async () => {
     if (code.length !== 6) {
       setError('6자리 코드를 입력해주세요.')
       return
     }
 
     setError(null)
-    // Set submittedCode to trigger the query
-    const upperCode = code.toUpperCase()
-    console.log('[CodeEntryPage] setting submittedCode', { upperCode })
-    setSubmittedCode(upperCode)
-  }
+    setIsValidating(true)
 
-  const isValidating = !!submittedCode && isFetching
+    try {
+      const upperCode = code.toUpperCase()
+      const result = await checkCodeType(upperCode)
+
+      if (result.type === 'normal') {
+        // 일반 설문으로 이동
+        resetResponseStore()
+        setSurveyCode(upperCode)
+        navigate(`/info/${upperCode}`)
+      } else if (result.type === 'ai') {
+        // AI 챗봇으로 이동
+        resetChatStore()
+        navigate(`/ai/${upperCode}/info`)
+      } else {
+        // 유효하지 않은 코드
+        setError('유효하지 않은 코드입니다. 다시 확인해주세요.')
+      }
+    } catch (err) {
+      console.error('Code validation error:', err)
+      setError('코드 확인 중 오류가 발생했습니다.')
+    } finally {
+      setIsValidating(false)
+    }
+  }
 
   // Handle Enter key press
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && code.length === 6) {
-      console.log('[CodeEntryPage.handleKeyDown] called', { key: e.key })
+    if (e.key === 'Enter' && code.length === 6 && !isValidating) {
       handleSubmit()
     }
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white flex items-center justify-center p-4">
       <Card className="w-full max-w-md" padding="lg">
         <div className="flex flex-col items-center">
           {/* Logo */}
-          <h1 className="text-3xl font-bold text-gray-900 mb-8">
+          <div className="mb-6">
+            <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center">
+              <svg
+                className="w-10 h-10 text-white"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                />
+              </svg>
+            </div>
+          </div>
+
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">
             SciForm
           </h1>
 
           {/* Description */}
           <p className="text-gray-600 text-center mb-8">
-            설문 접속 코드를 입력하세요
+            접속 코드를 입력하세요
           </p>
 
           {/* Code Input */}
@@ -105,7 +156,7 @@ export default function CodeEntryPage() {
               onChange={handleCodeChange}
               placeholder="ABC123"
               error={error || undefined}
-              className="text-center"
+              className="text-center text-2xl tracking-widest"
               disabled={isValidating}
             />
           </div>
@@ -116,11 +167,16 @@ export default function CodeEntryPage() {
             size="lg"
             onClick={handleSubmit}
             disabled={code.length !== 6 || isValidating}
-            isLoading={isValidating || isLoading}
+            isLoading={isValidating}
             className="w-full"
           >
             시작하기
           </Button>
+
+          {/* Helper text */}
+          <p className="mt-6 text-xs text-gray-400 text-center">
+            선생님께서 알려주신 6자리 코드를 입력하세요
+          </p>
         </div>
       </Card>
     </div>

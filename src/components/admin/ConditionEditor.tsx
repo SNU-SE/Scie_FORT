@@ -133,9 +133,10 @@ export function ConditionEditor({
 
   const isChoiceType = questionType === 'single' || questionType === 'multiple'
 
-  // 다음 인라인 입력 번호 계산
+  // 다음 인라인 입력 번호 계산 (그룹 입력 포함)
   const getNextInputNumber = useCallback(() => {
-    const regex = /\{\{input:(\d+)/g
+    // 일반 입력과 그룹 입력 모두에서 번호 추출
+    const regex = /\{\{(?:[a-zA-Z0-9]+:)?input:(\d+)/g
     let maxNum = 0
     let match
     while ((match = regex.exec(questionText)) !== null) {
@@ -165,16 +166,52 @@ export function ConditionEditor({
     }, 0)
   }, [questionText, getNextInputNumber])
 
+  // 그룹 인라인 입력 삽입
+  const insertGroupInput = useCallback((position?: number, groupName?: string) => {
+    const textarea = textareaRef.current
+    if (!textarea) return
+
+    const group = groupName || prompt('그룹 이름을 입력하세요 (예: g1):')
+    if (!group) return
+
+    const nextNum = getNextInputNumber()
+    const insertText = `{{${group}:input:${nextNum}[입력]}}`
+
+    const cursorPos = position ?? textarea.selectionStart ?? questionText.length
+    const newText = questionText.slice(0, cursorPos) + insertText + questionText.slice(cursorPos)
+    setQuestionText(newText)
+
+    // 커서를 삽입된 텍스트 뒤로 이동
+    setTimeout(() => {
+      textarea.focus()
+      const newCursorPos = cursorPos + insertText.length
+      textarea.setSelectionRange(newCursorPos, newCursorPos)
+    }, 0)
+  }, [questionText, getNextInputNumber])
+
   // 인라인 입력 버튼 드래그 시작
   const handleInlineInputDragStart = useCallback((e: React.DragEvent) => {
     e.dataTransfer.setData('text/plain', 'inline-input')
     e.dataTransfer.effectAllowed = 'copy'
   }, [])
 
+  // 그룹 입력 버튼 드래그 시작
+  const handleGroupInputDragStart = useCallback((e: React.DragEvent) => {
+    const groupName = prompt('그룹 이름을 입력하세요 (예: g1):')
+    if (!groupName) {
+      e.preventDefault()
+      return
+    }
+    e.dataTransfer.setData('text/plain', `group-input:${groupName}`)
+    e.dataTransfer.effectAllowed = 'copy'
+  }, [])
+
   // textarea에 드롭
   const handleTextareaDrop = useCallback((e: React.DragEvent) => {
     const data = e.dataTransfer.getData('text/plain')
-    if (data === 'inline-input') {
+
+    // 일반 인라인 입력 또는 그룹 입력 처리
+    if (data === 'inline-input' || data.startsWith('group-input:')) {
       e.preventDefault()
       e.stopPropagation()
 
@@ -195,9 +232,15 @@ export function ConditionEditor({
         }
       }
 
-      insertInlineInput(position)
+      if (data === 'inline-input') {
+        insertInlineInput(position)
+      } else {
+        // group-input:groupName 형식에서 그룹명 추출
+        const groupName = data.replace('group-input:', '')
+        insertGroupInput(position, groupName)
+      }
     }
-  }, [questionText, insertInlineInput])
+  }, [questionText, insertInlineInput, insertGroupInput])
 
   const handleTextareaDragOver = useCallback((e: React.DragEvent) => {
     const data = e.dataTransfer.types.includes('text/plain')
@@ -359,7 +402,7 @@ export function ConditionEditor({
 
           {/* 서술형일 때 인라인 입력 버튼 */}
           {questionType === 'text' && (
-            <div className="mt-2 flex items-center gap-2">
+            <div className="mt-2 flex flex-wrap items-center gap-2">
               <div
                 draggable
                 onDragStart={handleInlineInputDragStart}
@@ -371,8 +414,19 @@ export function ConditionEditor({
                 </svg>
                 인라인 입력
               </div>
+              <div
+                draggable
+                onDragStart={handleGroupInputDragStart}
+                onClick={() => insertGroupInput()}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-50 text-purple-700 text-sm font-medium rounded-lg border border-purple-200 cursor-grab active:cursor-grabbing hover:bg-purple-100 transition-colors select-none"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                </svg>
+                그룹 입력
+              </div>
               <span className="text-xs text-gray-400">
-                드래그하여 원하는 위치에 놓거나 클릭하여 추가
+                드래그하여 원하는 위치에 놓거나 클릭하여 추가 (그룹 입력: 같은 그룹 내 상호 배타적)
               </span>
             </div>
           )}

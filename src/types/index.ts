@@ -2,6 +2,9 @@
 // Survey Platform - TypeScript Type Definitions
 // ============================================
 
+// Re-export AI types
+export * from './ai'
+
 // --------------------------------------------
 // Base Types
 // --------------------------------------------

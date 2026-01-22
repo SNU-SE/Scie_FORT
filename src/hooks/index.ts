@@ -55,3 +55,41 @@ export {
   useRealtimeCompletedSessions,
   useRealtimeSubscription,
 } from './useRealtime'
+
+// AI Hooks
+export {
+  // Query Keys
+  aiKeys,
+  // Survey Hooks
+  useAISurveys,
+  useAISurveyDetail,
+  useAISurveyByCode,
+  useCreateAISurvey,
+  useUpdateAISurvey,
+  useDeleteAISurvey,
+  // Question Hooks
+  useAIQuestions,
+  useCreateAIQuestion,
+  useUpdateAIQuestion,
+  useDeleteAIQuestion,
+  // Option Hooks
+  useCreateAIOption,
+  useUpdateAIOption,
+  useDeleteAIOption,
+  // Access Code Hooks
+  useCreateAIAccessCode,
+  useUpdateAIAccessCode,
+  useDeleteAIAccessCode,
+  // Session Hooks
+  useAISessions,
+  useAISession,
+  useCreateAISession,
+  useUpdateAISession,
+  // Message Hooks
+  useAIMessages,
+  useCreateAIMessage,
+  // Utility Functions
+  saveAIMessage,
+  fetchAISurveyByCode,
+  getNextMessageIndex,
+} from './useAI'

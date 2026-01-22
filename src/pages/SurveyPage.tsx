@@ -203,7 +203,8 @@ export default function SurveyPage() {
         } else if (question.type === 'text') {
           // Check for inline inputs or main text
           const textResponses = response.textResponses || {}
-          const hasInlineInputs = question.content?.includes('{{input:')
+          // Check for both regular inline inputs {{input:N}} and group inputs {{g1:input:N}}
+          const hasInlineInputs = question.content?.match(/\{\{(?:[a-zA-Z0-9]+:)?input:\d+/)
 
           if (hasInlineInputs) {
             // For inline inputs, check if any input has value
@@ -248,11 +249,19 @@ export default function SurveyPage() {
                 hasError = true
               }
             } else if (condQ.type === 'text') {
-              if (
-                !condResponse.textResponses?.main ||
-                condResponse.textResponses.main.trim() === ''
-              ) {
-                hasError = true
+              const textResponses = condResponse.textResponses || {}
+              // Check for both regular inline inputs {{input:N}} and group inputs {{g1:input:N}}
+              const hasInlineInputs = condQ.content?.match(/\{\{(?:[a-zA-Z0-9]+:)?input:\d+/)
+
+              if (hasInlineInputs) {
+                // For inline inputs, check if any input has value
+                const hasAnyValue = Object.values(textResponses).some(v => v && v.trim() !== '')
+                if (!hasAnyValue) hasError = true
+              } else {
+                // For regular text input
+                if (!textResponses.main || textResponses.main.trim() === '') {
+                  hasError = true
+                }
               }
             }
 
