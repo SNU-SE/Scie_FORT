@@ -157,12 +157,27 @@ export function ExcelExport({ surveyId, surveyTitle }: ExcelExportProps) {
             // text_responses (인라인 다중 입력)가 있으면 병합하여 표시
             const textResponses = questionResponse?.text_responses
             if (textResponses && Object.keys(textResponses).length > 0) {
-              // 키 순서대로 정렬하여 "입력1 / 입력2 / 입력3" 형식으로 표시
-              const sortedValues = Object.keys(textResponses)
-                .sort((a, b) => parseInt(a) - parseInt(b))
-                .map((key) => textResponses[key])
-                .filter(Boolean)
-              row.push(sortedValues.join(' / '))
+              // 질문 내용에서 인라인 입력 패턴 추출
+              const inputPattern = /\{\{(?:g\d+:)?input:(\d+)(?:\[[^\]]*\])?\}\}/g
+              const inputIds: string[] = []
+              let match
+              while ((match = inputPattern.exec(question.content)) !== null) {
+                inputIds.push(match[1])
+              }
+
+              if (inputIds.length > 1) {
+                // 여러 개 입력이 있는 경우: 위치를 /로 구분하여 표시
+                // 예: 입력 1,2,3 중 2번만 입력 → "/내용/"
+                const values = inputIds.map((id) => textResponses[id] || '')
+                row.push(values.join('/'))
+              } else {
+                // 단일 입력이거나 패턴을 찾지 못한 경우: 기존 방식
+                const sortedValues = Object.keys(textResponses)
+                  .sort((a, b) => parseInt(a) - parseInt(b))
+                  .map((key) => textResponses[key])
+                  .filter(Boolean)
+                row.push(sortedValues.join(' / '))
+              }
             } else {
               row.push(questionResponse?.text_response ?? '')
             }
